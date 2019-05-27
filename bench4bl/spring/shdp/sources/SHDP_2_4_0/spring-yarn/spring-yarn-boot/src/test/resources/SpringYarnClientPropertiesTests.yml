@@ -1,0 +1,12 @@
+spring:
+    yarn:
+        client:
+            files:
+              - "files1Foo"
+              - "files2Foo"
+            priority: 234
+            queue: queueFoo
+            labelExpression: labelExpressionFoo
+            clientClass: clientClassFoo
+            startup:
+                action: submit

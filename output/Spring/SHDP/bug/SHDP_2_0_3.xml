@@ -1,0 +1,24 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+<bug id="423" opendate="2014-11-11 11:07:50" fixdate="2014-11-12 05:32:29" resolution="Complete">
+<buginformation>
+<summary>Partition writer doesn&amp;apos;t clean resources</summary>
+<description>AbstractPartitionDataStoreWriter keeps individual writers in a map which doesn&amp;amp;apos;t get cleared when writer closed by a timer. This is a problematic for long running partition writers with a lot of newly created partitions.</description>
+<version>2.0.3</version>
+<fixedVersion>2.1.0.M2</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.output.AbstractPartitionDataStoreWriter.java">
+</file>
+<file type="M" name="org.springframework.data.hadoop.store.output.PartitionTextFileWriter.java">
+<method>createWriter(Configuration,Path,CodecInfo)</method>
+</file>
+<file type="M" name="org.springframework.data.hadoop.store.output.TextFileWriter.java">
+<method>handleIdleTimeout()</method>
+</file>
+</fixedFiles>
+</bug>
+</bugrepository>

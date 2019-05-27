@@ -1,0 +1,55 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+<bug id="374" opendate="2014-07-24 07:22:34" fixdate="2014-07-25 12:40:00" resolution="Complete">
+<buginformation>
+<summary>Race condition for overwrite</summary>
+<description>org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.getOutput() always opens file using a default create(Path) method which enables overwriting by default. This is not what we want especially because it will create all sort of race conditions if same file is opened from multiple writers. This would lead in below hadoop exception:       java.io.FileNotFoundException: ID mismatch. Request id and saved id: 16399 , 16400     	at org.apache.hadoop.hdfs.server.namenode.INodeId.checkId(INodeId.java:53)     	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.checkLease(FSNamesystem.java:2755)     	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.analyzeFileState(FSNamesystem.java:2543)     	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:2454)     	at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.addBlock(NameNodeRpcServer.java:555)      </description>
+<version>2.0.1</version>
+<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">2023</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.java">
+<method>getOutput()</method>
+</file>
+<file type="M" name="org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="375" opendate="2014-07-24 07:58:14" fixdate="2014-07-25 12:40:08" resolution="Complete">
+<buginformation>
+<summary>RollingFileNamingStrategy gets into trouble with certain filenames</summary>
+<description>RollingFileNamingStrategy is using a wrong parsing method trying to find a `rolling` part of a file name to initialize its own counter from where to continue. Problem is simply because code is trying to parse integers from a file name and if it contains numeric part which cannot be parsed, exception is thrown which is not catched.       Caused by: java.lang.NumberFormatException: For input string: &quot;571195529825&quot;     at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)       We just need to make sure that we don&amp;amp;apos;t fail by trying to find the rolling part which should be a last number in a file name.</description>
+<version>2.0.1</version>
+<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">2023</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.strategy.naming.RollingFileNamingStrategy.java">
+<method>init(Path)</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="408" opendate="2014-10-25 03:09:13" fixdate="2014-10-29 14:40:06" resolution="Complete">
+<buginformation>
+<summary>DatasetTemplate doesn&amp;apos;t close writer if exception is thrown</summary>
+<description>If org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(Collection) gets into trouble when underlying writer throws an exception, writer is not closed and dfs client lease is not cleared. Vanilla hadoop 2.5.1 and  cdh5(2.5.0-cdh5.2.0) barks this in logs.       17:38:22,522  WARN      org.apache.hadoop.hdfs.LeaseRenewer: 458 - Failed to renew lease for [DFSClient_NONMAPREDUCE_-1719730779_11] for 30 seconds.  Will retry shortly ...     java.net.ConnectException: Call From neo.localdomain/127.0.1.1 to localhost:39583 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused       In these tests minicluster has already been shutdown but dfs client background thread is still trying to renew a lease which will never going to happen. This can be seen i.e. using test org.springframework.data.hadoop.store.dataset.DatasetTemplateNoNullsTests.testWritePojoWithNullValuesShouldFail()</description>
+<version>2.0.1</version>
+<fixedVersion>2.0.3, 2.1.0.M2</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">405</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.dataset.DatasetTemplate.java">
+</file>
+</fixedFiles>
+</bug>
+</bugrepository>

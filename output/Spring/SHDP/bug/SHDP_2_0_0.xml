@@ -1,0 +1,213 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+<bug id="181" opendate="2013-09-17 07:37:26" fixdate="2013-09-17 11:40:00" resolution="Complete">
+<buginformation>
+<summary>Add Spring 4.0 as an option for compile &amp; test</summary>
+<description>Add a build option -Dspring4 to allow compile and test against latest Spring 4.0 release</description>
+<version>2.0.0.M1</version>
+<fixedVersion>2.0.0.M2</fixedVersion>
+<type>TB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.scripting.ScriptingTest.java">
+<method>testNullCfg()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="245" opendate="2013-12-19 06:09:31" fixdate="2013-12-20 07:10:10" resolution="Complete">
+<buginformation>
+<summary>Using the Dataset support get NPE when saving POJOs containing null values in some fields</summary>
+<description>The DatasetTemplate generates Avro schema that doesn&amp;amp;apos;t allow null values. Caused by: org.apache.avro.file.DataFileWriter$AppendWriteException: java.lang.NullPointerException: in org.springframework.social.twitter.api.Tweet in long null of long in field inReplyToStatusId of org.springframework.social.twitter.api.Tweet 	at org.apache.avro.file.DataFileWriter.append(DataFileWriter.java:263) 	at org.kitesdk.data.filesystem.FileSystemDatasetWriter.write(FileSystemDatasetWriter.java:102) 	at org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(DatasetTemplate.java:104) 	at org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(DatasetTemplate.java:90) 	at org.springframework.xd.hadoop.fs.AvroWriter.write(AvroWriter.java:54) 	at org.springframework.xd.integration.hadoop.outbound.HdfsWritingMessageHandler.doWrite(HdfsWritingMessageHandler.java:58) 	... 83 more Caused by: java.lang.NullPointerException: in org.springframework.social.twitter.api.Tweet in long null of long in field inReplyToStatusId of org.springframework.social.twitter.api.Tweet 	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:145) 	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:58) 	at org.apache.avro.file.DataFileWriter.append(DataFileWriter.java:257) 	... 88 more Caused by: java.lang.NullPointerException 	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:79) 	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:143) 	at org.apache.avro.generic.GenericDatumWriter.writeField(GenericDatumWriter.java:114) 	at org.apache.avro.reflect.ReflectDatumWriter.writeField(ReflectDatumWriter.java:175) 	at org.apache.avro.generic.GenericDatumWriter.writeRecord(GenericDatumWriter.java:104) 	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:66) 	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:143) 	... 90 more</description>
+<version>2.0.0.M4</version>
+<fixedVersion>2.0.0.M5</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">1178</link>
+<link type="Relate" description="relates to">1182</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.dataset.DatasetTemplate.java">
+</file>
+<file type="M" name="org.springframework.data.hadoop.store.dataset.DatasetOperations.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="247" opendate="2014-01-18 01:08:03" fixdate="2014-01-31 07:30:33" resolution="Complete">
+<buginformation>
+<summary>ConfigurationFactoryBean sets wrong rm address property</summary>
+<description>internalConfig.set(&quot;yarn.resource.manager&quot;, rmUri.trim()); is wrong, it should be yarn.resourcemanager.address. </description>
+<version>2.0.0.M4</version>
+<fixedVersion>2.0.0.M5</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.configuration.ConfigurationFactoryBean.java">
+<method>afterPropertiesSet()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="246" opendate="2014-01-17 13:48:26" fixdate="2014-01-31 07:30:44" resolution="Complete">
+<buginformation>
+<summary>OutputStreamWriter Incorrect Logic in flush()</summary>
+<description>      	@Override     	public void flush() throws IOException {     		if (streamsHolder == null) {     			streamsHolder.getStream().flush();     		}     	}       Should be streamsHolder != null.</description>
+<version>2.0.0.M4</version>
+<fixedVersion>2.0.0.M5</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.output.OutputStreamWriter.java">
+<method>flush()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="269" opendate="2014-02-13 00:47:37" fixdate="2014-02-13 01:28:37" resolution="Complete">
+<buginformation>
+<summary>Update to Boot RC2</summary>
+<description>There are some breaking changes which are causing compile errors. Nothing major, some boot classes has been moved/renamed, etc.</description>
+<version>2.0.0.M5</version>
+<fixedVersion>2.0.0.M6</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.boot.support.YarnBootClientApplicationListener.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="335" opendate="2014-04-29 15:49:12" fixdate="2014-04-30 00:31:59" resolution="Complete">
+<buginformation>
+<summary>NPE in TextFileWriter class</summary>
+<description>There&amp;amp;apos;s an NPE in org.springframework.data.hadoop.store.output.TextFileWriter class in method flush. The condition should be (streamsHolder != null) and not (streamsHolder==null) @Override 	public synchronized  void flush() throws IOException { 		if (streamsHolder == null)  { 			streamsHolder.getStream().flush(); 		} 	}</description>
+<version>2.0.0.RC2</version>
+<fixedVersion>2.0.0.RC3</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.output.TextFileWriter.java">
+<method>flush()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="350" opendate="2014-06-05 02:48:42" fixdate="2014-06-05 04:46:05" resolution="Complete">
+<buginformation>
+<summary>HashMethodExecutor doesn&amp;apos;t work with negative values </summary>
+<description>We should always get accurate partitioning by a bucket size. With java a simple modulo doesn&amp;amp;apos;t work with negative values so this needs to be adjusted accordingly.</description>
+<version>2.0.0.RC4</version>
+<fixedVersion>2.0.0.GA</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.expression.HashMethodExecutor.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="349" opendate="2014-06-02 01:48:51" fixdate="2014-06-05 04:46:15" resolution="Complete">
+<buginformation>
+<summary>YarnInfoApplication using wrong source</summary>
+<description>YarnInfoApplication should add itself as source for SpringApplicationBuilder instead of YarnPushApplication. Currently doesn&amp;amp;apos;t break anything because from boot point of view those two are identical.</description>
+<version>2.0.0.RC4</version>
+<fixedVersion>2.0.0.GA</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.boot.app.YarnInfoApplication.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="365" opendate="2014-07-01 06:27:49" fixdate="2014-07-25 12:39:29" resolution="Complete">
+<buginformation>
+<summary>Store writer should not fail on lifecycle</summary>
+<description>OutputStoreObjectSupport is trying to initialize a state by listing output directory for existing files. This operation will fail if hdfs is not available and we would expect things to go south. Problem is that this happens during the bean lifecycle which is extremely inconvenient for user of this component. We should not fail during the lifecycle start and then do any init work when hdfs is available. </description>
+<version>2.0.0.GA</version>
+<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java">
+<method>initOutputContext()</method>
+<method>onInit()</method>
+<method>getOutputContext()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="373" opendate="2014-07-15 12:01:16" fixdate="2014-07-25 12:39:48" resolution="Complete">
+<buginformation>
+<summary>Test failure in MindIntegrationRawTests</summary>
+<description>Random test failures somehow cause by ports. There has been similar issues i.e. with SHDP-138 but these current problems only happen with CI builds.</description>
+<version>2.0.0.GA</version>
+<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+<type>TB</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">2023</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.integration.ip.mind.MindIntegrationRawTests.java">
+<method>testVanillaChannels()</method>
+<method>testServiceInterfaces()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="385" opendate="2014-08-20 17:23:57" fixdate="2014-08-22 06:15:53" resolution="Complete">
+<buginformation>
+<summary>StaticEventingAppmaster hangs forever with -100 container exit status </summary>
+<description>In a cluster running Hortonwork HDP 2.1.3, we shut down a NodeManager and all running application containers on that node exited with -100 status (lost node scenario). However, we observed that all staticEventingAppmasters for these containers were hanging forever.  Potential cause is that onContainerCompleted() returns without invoking notifyCompleted() given -100 exit status due to a lost node. </description>
+<version>2.0.0.GA</version>
+<fixedVersion>2.1.0.M1</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.am.monitor.DefaultContainerMonitor.java">
+</file>
+</fixedFiles>
+</bug>
+<bug id="394" opendate="2014-09-11 08:58:58" fixdate="2014-09-15 09:18:17" resolution="Complete">
+<buginformation>
+<summary>Can&amp;apos;t run mapreduce job in local mode</summary>
+<description>I would like to run the mapreduce jobs without running any hadoop server or having HDFS to test them. So I use mapreduce.framework.name=local. Unfortunately the org.springframework.data.hadoop.mapreduce.JobUtils#getRunningJob sets this configuration like this:       				Configuration cfg = job.getConfiguration();     				cfg.set(&quot;mapreduce.framework.name&quot;, &quot;yarn&quot;);       I could override this while debugging and could run the job but can&amp;amp;apos;t do this from configuration. Can you tell me why is this here and can you remove it or make it configurable or tell me why should I not use local mode? I only tested this with 2.0.0-RELEASE but the code is there in version 2.1.0.M1 too.</description>
+<version>2.0.0.GA</version>
+<fixedVersion>2.0.3, 2.1.0.M2</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.mapreduce.JobUtils.java">
+<method>getRunningJob(Job)</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="356" opendate="2014-06-18 12:59:38" fixdate="2014-12-08 01:08:21" resolution="Complete">
+<buginformation>
+<summary>Remove unsupported lzo codecs.</summary>
+<description>Docs are a little misleading for usage of LZO, SLZO, LZOP and SLZOP. Lets just leave lzo there because additional split work by twitter is not truly split stream on codec level. Or at least they never implemented the SplittableCompressionCodec interface which makes is unusable outside of MR record reader.</description>
+<version>2.0.0.GA</version>
+<fixedVersion>2.1.0.M3</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.codec.Codecs.java">
+</file>
+</fixedFiles>
+</bug>
+</bugrepository>

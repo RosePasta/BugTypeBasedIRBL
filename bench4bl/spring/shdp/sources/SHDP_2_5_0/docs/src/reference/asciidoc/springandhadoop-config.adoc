@@ -1,0 +1,550 @@
+[[springandhadoop-config]]
+== Hadoop Configuration
+
+One of the common tasks when using Hadoop is interacting with its
+_runtime_ - whether it is a local setup or a remote cluster, one needs
+to properly configure and bootstrap Hadoop in order to submit the
+required jobs. This chapter will focus on how Spring for Apache Hadoop
+(SHDP) leverages Spring's lightweight IoC container to simplify the
+interaction with Hadoop and make deployment, testing and provisioning
+easier and more manageable.
+
+=== Using the Spring for Apache Hadoop Namespace
+
+To simplify configuration, SHDP provides a dedicated namespace for most
+of its components. However, one can opt to configure the beans directly
+through the usual `<bean>` definition. For more information about XML
+Schema-based configuration in Spring, see
+http://docs.spring.io/spring/docs/4.1.x/spring-framework-reference/html/xsd-config.html[this]
+appendix in the Spring Framework reference documentation.
+
+To use the SHDP namespace, one just needs to import it inside the
+configuration:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:hdp="http://www.springframework.org/schema/hadoop"<!--1--><!--2-->
+   xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/hadoop
+    http://www.springframework.org/schema/hadoop/spring-hadoop.xsd"><!--3-->
+
+   <bean/>
+
+   <hdp:configuration/><!--4-->
+</beans>
+----
+
+<1> Spring for Apache Hadoop namespace prefix. Any name can do but
+throughout the reference documentation, `hdp` will be used.
+
+<2> The namespace URI.
+
+<3> The namespace URI location. Note that even though the location points to
+an external address (which exists and is valid), Spring will resolve the
+schema locally as it is included in the Spring for Apache Hadoop
+library.
+
+<4> Declaration example for the Hadoop namespace. Notice the prefix usage.
+
+Once imported, the namespace elements can be declared simply by using
+the aforementioned prefix. Note that is possible to change the default
+namespace, for example from `<beans>` to `<hdp>`. This is useful for
+configuration composed mainly of Hadoop components as it avoids
+declaring the prefix. To achieve this, simply swap the namespace prefix
+declarations above:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+xmlns="http://www.springframework.org/schema/hadoop"<!--1-->
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:beans="http://www.springframework.org/schema/beans"<!--2-->
+   xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+        
+    <beans:bean id ... ><!--3-->
+
+    <configuration ...><!--4-->
+
+</beans:beans>
+----
+
+<1> The default namespace declaration for this XML file points to the Spring
+for Apache Hadoop namespace.
+
+<2> The beans namespace prefix declaration.
+
+<3> Bean declaration using the `<beans>` namespace. Notice the prefix.
+
+<4> Bean declaration using the `<hdp>` namespace. Notice the _lack_ of
+prefix (as `hdp` is the default namespace).
+
+For the remainder of this doc, to improve readability, the XML examples
+may simply refer to the `<hdp>` namespace without the namespace
+declaration, where possible.
+
+=== Using the Spring for Apache Hadoop JavaConfig
+
+Annotation based configuration is designed to work via a
+`SpringHadoopConfigurerAdapter` which is loosely trying to use same
+type of dsl language familiar from xml. Within the adapter you need to
+override `configure` method which is exposing `HadoopConfigConfigurer`
+containing familiar attributes to work with a Hadoop configuration.
+
+[source,java]
+----
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.hadoop.config.annotation.EnableHadoop
+import org.springframework.data.hadoop.config.annotation.SpringHadoopConfigurerAdapter
+import org.springframework.data.hadoop.config.annotation.builders.HadoopConfigConfigurer;
+
+@Configuration
+@EnableHadoop
+static class Config extends SpringHadoopConfigurerAdapter {
+
+  @Override
+  public void configure(HadoopConfigConfigurer config) throws Exception {
+    config
+      .fileSystemUri("hdfs://localhost:8021");
+  }
+
+}
+----
+
+[NOTE]
+====
+`@EnableHadoop` annotation is required to mark Spring `@Configuration`
+class to be a candidate for Spring Hadoop configuration.
+====
+
+
+=== Configuring Hadoop
+
+In order to use Hadoop, one needs to first configure it namely by
+creating a `Configuration` object. The configuration holds information
+about the job tracker, the input, output format and the various other
+parameters of the map reduce job.
+
+In its simplest form, the configuration definition is a one liner:
+
+[source,xml]
+----
+<hdp:configuration />
+----
+
+The declaration above defines a Configuration bean (to be precise a
+factory bean of type ConfigurationFactoryBean) named, by default,
+`hadoopConfiguration`. The default name is used, by conventions, by the
+other elements that require a configuration - this leads to simple and
+very concise configurations as the main components can automatically
+wire themselves up without requiring any specific configuration.
+
+For scenarios where the defaults need to be tweaked, one can pass in
+additional configuration files:
+
+[source,xml]
+----
+<hdp:configuration resources="classpath:/custom-site.xml, classpath:/hq-site.xml">
+----
+
+In this example, two additional Hadoop configuration resources are added
+to the configuration.
+
+[NOTE]
+====
+Note that the configuration makes use of Spring's
+http://docs.spring.io/spring/docs/4.1.x/spring-framework-reference/html/resources.html[Resource]
+abstraction to locate the file. This allows various search patterns to
+be used, depending on the running environment or the prefix specified
+(if any) by the value - in this example the classpath is used.
+====
+
+In addition to referencing configuration resources, one can tweak Hadoop
+settings directly through Java Properties. This can be quite handy when
+just a few options need to be changed:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:hdp="http://www.springframework.org/schema/hadoop"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+        
+     <hdp:configuration>
+        fs.defaultFS=hdfs://localhost:8020
+        hadoop.tmp.dir=/tmp/hadoop
+        electric=sea
+     </hdp:configuration>
+</beans>
+----
+
+One can further customize the settings by avoiding the so called
+_hard-coded_ values by externalizing them so they can be replaced at
+runtime, based on the existing environment without touching the
+configuration:
+
+[NOTE]
+====
+Usual configuration parameters for `fs.defaultFS`, `mapred.job.tracker`
+and `yarn.resourcemanager.address` can be configured using tag
+attributes _file-system-uri_, _job-tracker-uri_ and _rm-manager-uri_
+respectively.
+====
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:hdp="http://www.springframework.org/schema/hadoop"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+        
+     <hdp:configuration>
+        fs.defaultFS=${hd.fs}
+        hadoop.tmp.dir=file://${java.io.tmpdir}
+        hangar=${number:18}
+     </hdp:configuration>
+     
+     <context:property-placeholder location="classpath:hadoop.properties" />     
+</beans>
+----
+
+Through Spring's property placeholder
+http://docs.spring.io/spring/docs/4.1.x/spring-framework-reference/html/beans.html#beans-factory-placeholderconfigurer[support],
+http://docs.spring.io/spring/docs/4.1.x/spring-framework-reference/html/expressions.html[SpEL]
+and the
+http://spring.io/blog/2011/06/09/spring-framework-3-1-m2-released/[environment
+abstraction]. one can externalize environment
+specific properties from the main code base easing the deployment across
+multiple machines. In the example above, the default file system is
+replaced based on the properties available in `hadoop.properties` while
+the temp dir is determined dynamically through `SpEL`. Both approaches
+offer a lot of flexibility in adapting to the running environment - in
+fact we use this approach extensivly in the Spring for Apache Hadoop
+test suite to cope with the differences between the different
+development boxes and the CI server.
+
+Additionally, external `Properties` files can be loaded, `Properties`
+beans (typically declared through Spring's {core-ref-util}[util] namespace). Along with the nested properties declaration, this
+allows customized configurations to be easily declared:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:hdp="http://www.springframework.org/schema/hadoop"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+   <!-- merge the local properties, the props bean and the two properties files -->        
+   <hdp:configuration properties-ref="props" properties-location="cfg-1.properties, cfg-2.properties">
+      star=chasing
+      captain=eo
+   </hdp:configuration>
+     
+   <util:properties id="props" location="props.properties"/>     
+</beans>
+----
+
+When merging several properties, ones defined locally win. In the
+example above the configuration properties are the primary source,
+followed by the `props` bean followed by the external properties file
+based on their defined order. While it's not typical for a configuration
+to refer to so many properties, the example showcases the various
+options available.
+
+[NOTE]
+====
+For more properties utilities, including using the System as a source or
+fallback, or control over the merging order, consider using Spring's
+PropertiesFactoryBean
+(which is what Spring for Apache Hadoop and
+util:properties
+use underneath).
+====
+
+It is possible to create configurations based on existing ones - this
+allows one to create dedicated configurations, slightly different from
+the main ones, usable for certain jobs (such as streaming - more on that
+#hadoop:job:streaming[below]). Simply use the `configuration-ref`
+attribute to refer to the _parent_ configuration - all its properties
+will be inherited and overridden as specified by the child:
+
+[source,xml]
+----
+<!-- default name is 'hadoopConfiguration' -->
+<hdp:configuration>
+    fs.defaultFS=${hd.fs}
+    hadoop.tmp.dir=file://${java.io.tmpdir}
+</hdp:configuration>
+
+<hdp:configuration id="custom" configuration-ref="hadoopConfiguration">
+    fs.defaultFS=${custom.hd.fs}
+</hdp:configuration>     
+
+...
+----
+
+Make sure though that you specify a different name since otherwise,
+because both definitions will have the same name, the Spring container
+will interpret this as being the same definition (and will usually
+consider the last one found).
+
+Another option worth mentioning is `register-url-handler` which, as the
+name implies, automatically registers an URL handler in the running VM.
+This allows urls referrencing _hdfs_ resource (by using the `hdfs`
+prefix) to be properly resolved - if the handler is not registered, such
+an URL will throw an exception since the VM does not know what `hdfs`
+means.
+
+[NOTE]
+====
+Since only one URL handler can be registered per VM, at most once, this
+option is turned off by default. Due to the reasons mentioned before,
+once enabled if it fails, it will log the error but will not throw an
+exception. If your `hdfs` URLs stop working, make sure to investigate
+this aspect.
+====
+
+Last but not least a reminder that one can mix and match all these
+options to her preference. In general, consider externalizing Hadoop
+configuration since it allows easier updates without interfering with
+the application configuration. When dealing with multiple, similar
+configurations use configuration _composition_ as it tends to keep the
+definitions concise, in sync and easy to update.
+
+.`hdp:configuration` attributes
+[width="100%",cols="18%,16%,66%",options="header",]
+|=======================================================================
+|Name |Values |Description
+|`configuration-ref` |Bean Reference |Reference to existing
+_Configuration_ bean
+
+|`properties-ref` |Bean Reference |Reference to existing _Properties_
+bean
+
+|`properties-location` |Comma delimited list |List or Spring _Resource_
+paths
+
+|`resources` |Comma delimited list |List or Spring _Resource_ paths
+
+|`register-url-handler` |Boolean |Registers an HDFS url handler in the
+running VM. Note that this operation can be executed at most once in a
+given JVM hence the default is false. Defaults to false.
+
+|`file-system-uri` |String |The HDFS filesystem address. Equivalent to
+_fs.defaultFS_ propertys.
+
+|`job-tracker-uri` |String |Job tracker address for HadoopV1. Equivalent
+to _mapred.job.tracker_ property.
+
+|`rm-manager-uri` |String |The Yarn Resource manager address for
+HadoopV2. Equivalent to _yarn.resourcemanager.address_ property.
+
+|`user-keytab` |String |Security keytab.
+
+|`user-principal` |String |User security principal.
+
+|`namenode-principal` |String |Namenode security principal.
+
+|`rm-manager-principal` |String |Resource manager security principal.
+
+|`security-method` |String |The security method for hadoop.
+|=======================================================================
+
+[NOTE]
+====
+Configuring security and kerberos refer to chapter <<springandhadoop-security>>.
+====
+
+[[springandhadoop-config-bootsupport]]
+=== Boot Support
+
+Spring Boot support is enabled automatically if {spring-data-hadoop-boot-jar}
+is found from a classpath. Currently Boot auto-configuration is a
+little limited and only supports configuring of `hadoopConfiguration`
+and `fsShell` beans.
+
+Configuration properties can be defined using various methods. See a
+Spring Boot documentation for details.
+
+[source,groovy,subs="attributes"]
+----
+@Grab('org.springframework.data:spring-data-hadoop-boot:{spring-hadoop-version}')
+
+import org.springframework.data.hadoop.fs.FsShell
+
+public class App implements CommandLineRunner {
+
+  @Autowired FsShell shell
+
+  void run(String... args) {
+    shell.lsr("/tmp").each() {println "> ${it.path}"}
+  }
+
+}
+----
+
+Above example which can be run using Spring Boot CLI shows how
+auto-configuration ease use of Spring Hadoop. In this example Hadoop
+configuration and FsShell are configured automatically.
+
+==== `spring.hadoop` configuration properties
+
+Namespace `spring.hadoop` supports following properties; 
+<<spring.hadoop.fsUri,fsUri>>,
+<<spring.hadoop.resourceManagerAddress,resourceManagerAddress>>,
+<<spring.hadoop.resourceManagerSchedulerAddress,resourceManagerSchedulerAddress>>,
+<<spring.hadoop.resourceManagerHost,resourceManagerHost>>,
+<<spring.hadoop.resourceManagerPort,resourceManagerPort>>,
+<<spring.hadoop.resourceManagerSchedulerPort,resourceManagerSchedulerPort>>,
+<<spring.hadoop.jobHistoryAddress,jobHistoryAddress>>,
+<<spring.hadoop.resources,resources>> and
+<<spring.hadoop.config,config>>.
+
+[[spring.hadoop.fsUri]]`spring.hadoop.fsUri`::
+  Description:::
+A hdfs file system uri for a namenode.
+  Required:::
+Yes
+  Type:::
+String
+  Default Value:::
+null
+[[spring.hadoop.resourceManagerAddress]]`spring.hadoop.resourceManagerAddress`::
+  Description:::
+Address of a YARN resource manager.
+  Required:::
+No
+  Type:::
+String
+  Default Value:::
+null
+[[spring.hadoop.resourceManagerSchedulerAddress]]`spring.hadoop.resourceManagerSchedulerAddress`::
+  Description:::
+Address of a YARN resource manager scheduler.
+  Required:::
+No
+  Type:::
+String
+  Default Value:::
+null
+[[spring.hadoop.resourceManagerHost]]`spring.hadoop.resourceManagerHost`::
+  Description:::
+Hostname of a YARN resource manager.
+  Required:::
+No
+  Type:::
+String
+  Default Value:::
+null
+[[spring.hadoop.resourceManagerPort]]`spring.hadoop.resourceManagerPort`::
+  Description:::
+Port of a YARN resource manager.
+  Required:::
+No
+  Type:::
+Integer
+  Default Value:::
+8032
+[[spring.hadoop.resourceManagerSchedulerPort]]`spring.hadoop.resourceManagerSchedulerPort`::
+  Description:::
+Port of a YARN resource manager scheduler. This property
+is only needed for an application master.
+  Required:::
+No
+  Type:::
+Integer
+  Default Value:::
+8030
+[[spring.hadoop.jobHistoryAddress]]`spring.hadoop.jobHistoryAddress`::
+  Description:::
+Address of a MapReduce job history server.
+  Required:::
+No
+  Type:::
+String
+  Default Value:::
+null
+[[spring.hadoop.resources]]`spring.hadoop.resources`::
+  Description:::
+List of Spring resource locations to be initialized in
+Hadoop configuration. These resources should be in Hadoop's
+own site xml format and location format can be anything Spring
+supports. For example, _classpath:/myentry.xml_ from a
+classpath or _file:/myentry.xml_ from a file system.
+  Required:::
+No
+  Type:::
+List
+  Default Value:::
+null
+[[spring.hadoop.config]]`spring.hadoop.config`::
+  Description:::
+Map of generic hadoop configuration properties.
++
+This yml example shows howto set filesystem uri using `config`
+property instead of `fsUri`.
++
+.application.yml
+----
+spring:
+  hadoop:
+    config:
+      fs.defaultFS: hdfs://localhost:8020
+----
++
+Or:
++
+.application.yml
+----
+spring:
+  hadoop:
+    config:
+      fs:
+        defaultFS: hdfs://localhost:8020
+----
++
+This example shows howto set same using properties format:
++
+.application.properties
+----
+spring.hadoop.config.fs.defaultFS=hdfs://localhost:8020
+----
+  Required:::
+No
+  Type:::
+Map
+  Default Value:::
+null
+
+==== `spring.hadoop.fsshell` configuration properties
+
+Namespace `spring.hadoop.fsshell` supports following properties; 
+<<spring.hadoop.fsshell.enabled,enabled>>
+
+[[spring.hadoop.fsshell.enabled]]`spring.hadoop.fsshell.enabled`::
+  Description:::
+Defines if `FsShell` should be created automatically.
+  Required:::
+No
+  Type:::
+Boolean
+  Default Value:::
+true

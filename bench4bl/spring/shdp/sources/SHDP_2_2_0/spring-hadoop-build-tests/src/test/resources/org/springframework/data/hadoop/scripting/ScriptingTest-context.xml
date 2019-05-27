@@ -1,0 +1,32 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd" default-lazy-init="true">
+
+	<import resource="../hadoop-ctx.xml"/>
+
+	<hdp:script id="script-js" location="org/springframework/data/hadoop/scripting/basic-script.js"/> 
+	<hdp:script id="script-py" location="org/springframework/data/hadoop/scripting/basic-script.py"/>
+	<hdp:script id="script-rb" location="org/springframework/data/hadoop/scripting/basic-script.rb"/>
+	<hdp:script id="script-groovy" location="org/springframework/data/hadoop/scripting/basic-script.groovy"/>
+	
+	<hdp:script id="distcp" language="groovy">distcp.copy("${distcp.src}", "${distcp.dst}")</hdp:script>
+	
+	<hdp:script id="inlined-js" language="javascript">
+		<hdp:property name="foo" value="bar"/>
+try {load("nashorn:mozilla_compat.js");} catch (e) {} // for Java 8
+importPackage(java.util);
+importPackage(org.apache.hadoop.fs);
+
+print("${hadoop.fs}")
+print(foo)
+name = UUID.randomUUID().toString()
+scriptName = "src/test/resources/test.properties"
+fs.copyFromLocalFile(scriptName, name)
+// return the file length 
+fs.getLength(name)
+	</hdp:script> 
+</beans>

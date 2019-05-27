@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:yarn="http://www.springframework.org/schema/yarn"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/yarn http://www.springframework.org/schema/yarn/spring-yarn.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<bean id="yarnCluster" class="org.springframework.yarn.test.support.YarnClusterFactoryBean">
+		<property name="clusterId" value="YarnClusterTests"/>
+		<property name="autoStart" value="true"/>
+	</bean>
+
+	<bean id="yarnConfiguredConfiguration" class="org.springframework.yarn.test.support.ConfigurationDelegatingFactoryBean">
+		<property name="cluster" ref="yarnCluster"/>
+	</bean>
+
+	<yarn:configuration id="yarnConfiguration" configuration-ref="yarnConfiguredConfiguration"/>
+
+	<yarn:localresources>
+		<yarn:copy src="file:build/dependency-all-libs/*" staging="true"/>
+		<yarn:copy src="file:build/libs/*" staging="true"/>
+		<yarn:hdfs path="/*" staging="true"/>
+	</yarn:localresources>
+
+	<!-- do not rely on default classpath, instead use all dependencies -->
+	<yarn:environment include-local-system-env="false">
+		<yarn:classpath use-yarn-app-classpath="false" delimiter=":">
+			./*
+		</yarn:classpath>
+	</yarn:environment>
+
+	<util:properties id="arguments">
+		<prop key="container-count">4</prop>
+	</util:properties>
+
+	<yarn:client app-name="simple-command" memory="1000">
+		<yarn:master-runner context-file="YarnClusterTests-appmaster-context.xml" arguments="arguments"/>
+	</yarn:client>
+
+</beans>

@@ -1,0 +1,26 @@
+spring:
+    yarn:
+        appmaster:
+            launchcontext:
+                archiveFile: archiveFileFoo
+                runnerClass: runnerClassFoo
+                arguments:
+                  ? argumentsKeyFoo1
+                  : argumentsValFoo1
+                  ? argumentsKeyFoo2
+                  : argumentsValFoo2
+                argumentsList:
+                  - argumentsListFoo1
+                  - argumentsListFoo2
+                containerAppClasspath:
+                  - "classpath1Foo"
+                  - "classpath2Foo"
+                options:
+                  - "options1Foo"
+                  - "options2Foo"
+                locality: true
+                includeLocalSystemEnv: true
+                useYarnAppClasspath: true
+                useMapreduceAppClasspath: true
+                includeBaseDirectory: false
+                pathSeparator: ":"

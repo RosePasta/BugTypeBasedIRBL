@@ -1,0 +1,5 @@
+spring:
+    yarn:
+        container:
+            keepContextAlive: false
+            containerClass: containerClassFoo

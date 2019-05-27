@@ -1,0 +1,6 @@
+spring:
+    yarn:
+        appmaster:
+            appmasterClass: appmasterClassFoo
+            containerCount: 123
+            keepContextAlive: false

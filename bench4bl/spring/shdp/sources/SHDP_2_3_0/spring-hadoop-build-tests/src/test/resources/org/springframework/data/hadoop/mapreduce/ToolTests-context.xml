@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/batch	http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+	<import resource="../hadoop-ctx.xml"/>
+	<import resource="../batch-common.xml"/>
+
+	<hdp:script id="script" language="javascript" run-at-startup="true">
+		if (fsh.test("/ide-test/input/word")) { fsh.rmr("/ide-test/input/word") }
+		if (fsh.test("/ide-test/runner/output")) { fsh.rmr("/ide-test/runner/output") }
+		fsh.put("src/test/resources/input/word", "/ide-test/input/word")
+	</hdp:script>
+
+	<hdp:tool-runner id="simple" tool-class="org.springframework.data.hadoop.mapreduce.ToolTests$TestTool" />
+	
+	<bean id="test-tool" class="org.springframework.data.hadoop.mapreduce.ToolTests$TestTool">
+		<constructor-arg ref="hadoopConfiguration" />
+	</bean>
+	
+	<hdp:tool-runner id="ref" tool-ref="test-tool" post-action="ref-start" scope="singleton"/>
+	
+	<hdp:tool-runner id="ref-start" tool-ref="test-tool" run-at-startup="true" user="costin"/>
+	
+	<hdp:tool-runner id="nested">
+		<hdp:arg value="--local"/>
+		<hdp:arg value="data/in.txt"/>
+		<hdp:arg value="data/out.txt"/>
+		cookies=for santa
+		
+		<hdp:tool>
+		<bean class="org.springframework.data.hadoop.mapreduce.ToolTests$TestTool">
+			<constructor-arg ref="hadoopConfiguration" />
+		</bean>
+		</hdp:tool>
+	</hdp:tool-runner>
+	
+	<job id="mainJob" xmlns="http://www.springframework.org/schema/batch">
+		<step id="bean" next="ns">
+			<tasklet ref="tasklet"/>
+		</step>
+		<step id="ns">
+			<tasklet ref="tasklet-ns"/>
+		</step>
+	</job>
+	
+	<bean id="tasklet" class="org.springframework.data.hadoop.batch.mapreduce.ToolTasklet" p:tool-ref="test-tool" p:configuration-ref="hadoopConfiguration" />
+	
+	<hdp:tool-tasklet id="tasklet-ns" scope="prototype" files="some-tool.jar">
+		<hdp:tool>
+		<bean class="org.springframework.data.hadoop.mapreduce.ToolTests$TestTool">
+			<constructor-arg ref="hadoopConfiguration" />
+		</bean>
+		</hdp:tool>
+	</hdp:tool-tasklet>
+	
+	
+	<hdp:tool-runner id="tool-jar" jar="some-tool.jar" files="some-tool.jar">
+        mapreduce.framework.name=yarn
+		<hdp:arg value="13"/>
+	</hdp:tool-runner>
+</beans>

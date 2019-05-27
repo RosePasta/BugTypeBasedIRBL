@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:task="http://www.springframework.org/schema/task" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+	<import resource="../hadoop-ctx.xml"/>
+	<hdp:script id="script" language="javascript" run-at-startup="true">
+	if (fsh.test("/ide-test/input/word")) { fsh.rmr("/ide-test/input/word") }
+	if (fsh.test("/ide-test/runner/output")) { fsh.rmr("/ide-test/runner/output") }
+	if (fsh.test("/ide-test/runner/output-2")) { fsh.rmr("/ide-test/runner/output-2") }
+	if (fsh.test("/ide-test/runner/output-3")) { fsh.rmr("/ide-test/runner/output-3") }
+	if (fsh.test("/ide-test/runner/output-4")) { fsh.rmr("/ide-test/runner/output-4") }
+	if (fsh.test("/ide-test/runner/killed")) { fsh.rmr("/ide-test/runner/killed") }
+	
+	fsh.put("src/test/resources/input/word", "/ide-test/input/word")			
+	</hdp:script>
+
+	<hdp:script id="nop-script" language="javascript">
+	print("Called script")
+	</hdp:script>
+ 
+	<bean id="jar-job-runner" class="org.springframework.data.hadoop.mapreduce.JobRunner" depends-on="script" >
+		<property name="jobs">
+			<list>
+			  <ref bean="custom-jar-job"/>
+			  <ref bean="jar-job"/>
+			</list>
+		</property>
+	</bean>
+
+	<hdp:job-runner id="another-runner" pre-action="nop-script" job-ref="custom-jar-job" run-at-startup="true"/>
+
+	<hdp:job-runner id="ns-runner" pre-action="another-runner" job-ref="jar-job, ns-job" run-at-startup="false"/>
+	
+	<bean id="no-wait" class="org.springframework.data.hadoop.mapreduce.JobRunner" depends-on="script">
+		<property name="jobs">
+			<list>
+				<ref bean="ns-job"/>
+				<hdp:job id="nested-job" 
+	   	input-path="/ide-test/input/word/" output-path="/ide-test/runner/output-2/"
+		mapper="org.apache.hadoop.examples.WordCount.TokenizerMapper"
+		reducer="org.apache.hadoop.examples.WordCount.IntSumReducer" />
+			</list>
+		</property>
+	</bean>
+
+	<hdp:job id="jar-job" 
+	   	input-path="/ide-test/input/word/" output-path="/ide-test/runner/output-3/"
+		mapper="org.apache.hadoop.examples.WordCount.TokenizerMapper"
+		reducer="org.apache.hadoop.examples.WordCount.IntSumReducer"
+		jar-by-class="org.apache.hadoop.examples.WordCount"
+		scope="prototype"
+		/> 
+
+	<hdp:job id="custom-jar-job" 
+	   	input-path="/ide-test/input/word/" output-path="/ide-test/runner/output-4/"
+		mapper="test.SomeTool$CustomMapper"
+		jar="some-tool.jar"
+		libs="some-tool.jar"
+		number-reducers="1"
+		scope="prototype" /> 
+
+	<hdp:job id="ns-job" 
+	   	input-path="/ide-test/input/word/" output-path="/ide-test/runner/output/"
+		mapper="org.apache.hadoop.examples.WordCount.TokenizerMapper"
+		reducer="org.apache.hadoop.examples.WordCount.IntSumReducer"
+		properties-ref="props" 
+		properties-location="cfg-1.properties, cfg-2.properties"
+		working-dir="."
+		codec="org.apache.hadoop.io.compress.DefaultCodec"
+		compress-output="false"
+		scope="singleton"
+		libs="classpath:mini-hadoop-examples.jar">
+
+		star=chasing
+		return=captain eo
+		train=last
+		mapred.reduce.tasks=8
+		mapred.map.tasks=4
+	</hdp:job>
+
+	<bean id="executor" class="org.springframework.core.task.SyncTaskExecutor"/>
+	
+	<util:properties id="props" location="props.properties"/>
+
+ 	<task:scheduler id="myScheduler" pool-size="10"/>
+ 
+	<task:scheduled-tasks scheduler="myScheduler">
+ 		<task:scheduled ref="ns-runner" method="call" fixed-rate="60000"/>
+ 	</task:scheduled-tasks>
+
+
+	<hdp:job-runner id="killer-runner" job-ref="victim-job" wait-for-completion="false" executor-ref="async"/>
+	
+	<hdp:job id="victim-job" 
+	   	input-path="/ide-test/input/word/" output-path="/ide-test/runner/killed/"
+		mapper="org.apache.hadoop.examples.WordCount.TokenizerMapper"
+		reducer="org.apache.hadoop.examples.WordCount.IntSumReducer"
+		scope="singleton"
+		libs="classpath:mini-hadoop-examples.jar"/>
+
+	<bean id="async" class="org.springframework.core.task.SyncTaskExecutor" />
+ 	
+ 	<!-- PE tests - currently disabled
+ 	<bean id="jobInfo" class="org.springframework.data.hadoop.mapreduce.JobTests$JobInfo"
+ 		p:jobId-ref="ns-job" p:oldJobId-ref="ns-job" p:runningJob-ref="ns-job" p:jobConf-ref="ns-job"/>
+ 	-->
+</beans>

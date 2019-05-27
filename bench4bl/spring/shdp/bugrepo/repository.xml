@@ -1,0 +1,1176 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+	<bug id="74" opendate="2012-05-11 18:46:56" fixdate="2012-05-24 23:47:39" resolution="Complete">
+		<buginformation>
+			<summary>generic options namespace attributes not parsed properly</summary>
+			<description>It looks like the generic option type (libs/archives/files) are not parsed properly by the namespace resulting in incomplete configurations.</description>
+			<version>1.0.0.M1</version>
+			<fixedVersion>1.0.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.mapreduce.ToolExecutor.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="96" opendate="2012-08-04 16:48:28" fixdate="2012-08-04 18:32:26" resolution="Complete">
+		<buginformation>
+			<summary>FsShell.text throws exception when passed in a file URI</summary>
+			<description></description>
+			<version>1.0.0.M2</version>
+			<fixedVersion>1.0.0.RC1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.fs.AbstractFsShellTest.java</file>
+			<file type="M">org.springframework.data.hadoop.fs.FsShell.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="130" opendate="2013-02-28 06:54:28" fixdate="2013-08-19 13:55:43" resolution="Complete">
+		<buginformation>
+			<summary>DistributedCacheFactoryBean closes filesystem causing hadoop 2.x app to fail</summary>
+			<description>DistributedCacheFactoryBean in afterPropertiesSet creates and closes filsystem instance. because in hadoop 2 filesystem instance are singletons, further talking to hdfs is not possible.
+fix is simple: in DistributedCacheFactoryBean change line 117 to
+	HdfsResourceLoader loader = new HdfsResourceLoader(fs);
+its regression from RC1, please fix it asap.</description>
+			<version>1.0.0.GA</version>
+			<fixedVersion>1.0.1.GA, 2.0.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.fs.DistributedCacheFactoryBean.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="181" opendate="2013-09-17 07:37:26" fixdate="2013-09-17 11:40:00" resolution="Complete">
+		<buginformation>
+			<summary>Add Spring 4.0 as an option for compile &amp; test</summary>
+			<description>Add a build option -Dspring4 to allow compile and test against latest Spring 4.0 release</description>
+			<version>2.0.0.M1</version>
+			<fixedVersion>2.0.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.scripting.ScriptingTest.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="197" opendate="2013-10-17 05:33:45" fixdate="2013-10-19 02:17:25" resolution="Complete">
+		<buginformation>
+			<summary>File distribution fails with same client and localizer with multiple submits</summary>
+			<description>If same client and localizer is used to submit multiple app instances, localizer does distribution only once. This is a problem if we use staging dir and appmaster clears files at the end.</description>
+			<version>2.0.0.M1</version>
+			<fixedVersion>2.0.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.client.AbstractYarnClient.java</file>
+			<file type="M">org.springframework.yarn.fs.DefaultResourceLocalizer.java</file>
+			<file type="M">org.springframework.yarn.am.container.DefaultContainerLauncher.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="187" opendate="2013-09-26 09:24:18" fixdate="2013-11-18 09:18:51" resolution="Complete">
+		<buginformation>
+			<summary>MiniYarnCluster tests fails on Mac OS X</summary>
+			<description>Have seen this with spring-hadoop build as well as spring-hadoop-samples/yarn/yarn/batch-partition
+Here is the error:
+org.springframework.yarn.examples.BatchPartitionTests &amp;gt; testAppSubmission FAILED
+    java.lang.AssertionError at BatchPartitionTests.java:53
+1 test completed, 1 failed
+:yarn-examples-common:yarn-examples-batch-partition:test FAILED
+Attached logs have more info</description>
+			<version>2.0.0.M1</version>
+			<fixedVersion>2.0.0.M3</fixedVersion>
+			<type>Defect</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.test.YarnClusterTests.java</file>
+			<file type="M">org.springframework.yarn.test.junit.ClusterBaseTestClassSubmitTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="245" opendate="2013-12-19 06:09:31" fixdate="2013-12-20 07:10:10" resolution="Complete">
+		<buginformation>
+			<summary>Using the Dataset support get NPE when saving POJOs containing null values in some fields</summary>
+			<description>The DatasetTemplate generates Avro schema that doesn&amp;amp;apos;t allow null values.
+Caused by: org.apache.avro.file.DataFileWriter$AppendWriteException: java.lang.NullPointerException: in org.springframework.social.twitter.api.Tweet in long null of long in field inReplyToStatusId of org.springframework.social.twitter.api.Tweet
+	at org.apache.avro.file.DataFileWriter.append(DataFileWriter.java:263)
+	at org.kitesdk.data.filesystem.FileSystemDatasetWriter.write(FileSystemDatasetWriter.java:102)
+	at org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(DatasetTemplate.java:104)
+	at org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(DatasetTemplate.java:90)
+	at org.springframework.xd.hadoop.fs.AvroWriter.write(AvroWriter.java:54)
+	at org.springframework.xd.integration.hadoop.outbound.HdfsWritingMessageHandler.doWrite(HdfsWritingMessageHandler.java:58)
+	... 83 more
+Caused by: java.lang.NullPointerException: in org.springframework.social.twitter.api.Tweet in long null of long in field inReplyToStatusId of org.springframework.social.twitter.api.Tweet
+	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:145)
+	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:58)
+	at org.apache.avro.file.DataFileWriter.append(DataFileWriter.java:257)
+	... 88 more
+Caused by: java.lang.NullPointerException
+	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:79)
+	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:143)
+	at org.apache.avro.generic.GenericDatumWriter.writeField(GenericDatumWriter.java:114)
+	at org.apache.avro.reflect.ReflectDatumWriter.writeField(ReflectDatumWriter.java:175)
+	at org.apache.avro.generic.GenericDatumWriter.writeRecord(GenericDatumWriter.java:104)
+	at org.apache.avro.generic.GenericDatumWriter.write(GenericDatumWriter.java:66)
+	at org.apache.avro.reflect.ReflectDatumWriter.write(ReflectDatumWriter.java:143)
+	... 90 more</description>
+			<version>2.0.0.M4</version>
+			<fixedVersion>2.0.0.M5</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.dataset.DatasetOperations.java</file>
+			<file type="M">org.springframework.data.hadoop.store.dataset.DatasetTemplate.java</file>
+			<file type="M">org.springframework.data.hadoop.store.dataset.DatasetTemplateTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.dataset.TestPojo.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">1178</link>
+			<link type="Relate" description="relates to">1182</link>
+		</links>
+	</bug>
+	<bug id="247" opendate="2014-01-18 01:08:03" fixdate="2014-01-31 07:30:33" resolution="Complete">
+		<buginformation>
+			<summary>ConfigurationFactoryBean sets wrong rm address property</summary>
+			<description>internalConfig.set("yarn.resource.manager", rmUri.trim()); is wrong, it should be yarn.resourcemanager.address. </description>
+			<version>2.0.0.M4</version>
+			<fixedVersion>2.0.0.M5</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.configuration.ConfigurationFactoryBean.java</file>
+			<file type="M">org.springframework.data.hadoop.config.ConfigurationNamespaceTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="246" opendate="2014-01-17 13:48:26" fixdate="2014-01-31 07:30:44" resolution="Complete">
+		<buginformation>
+			<summary>OutputStreamWriter Incorrect Logic in flush()</summary>
+			<description>
+
+
+
+
+
+	@Override
+
+
+
+
+	public void flush() throws IOException {
+
+
+
+
+		if (streamsHolder == null) {
+
+
+
+
+			streamsHolder.getStream().flush();
+
+
+
+
+		}
+
+
+
+
+	}
+
+
+
+
+
+
+Should be streamsHolder != null.</description>
+			<version>2.0.0.M4</version>
+			<fixedVersion>2.0.0.M5</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.OutputStreamWriter.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="184" opendate="2013-09-19 08:47:35" fixdate="2014-01-31 16:21:03" resolution="Fixed">
+		<buginformation>
+			<summary>Fix Hive tests</summary>
+			<description>The Hive and Cascading tests are not working properly - they need some attention</description>
+			<version>1.0.1.GA</version>
+			<fixedVersion>1.1.0.RC1, 2.0.0.M5</fixedVersion>
+			<type>Defect</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.hive.BasicHiveTest.java</file>
+			<file type="M">org.springframework.data.hadoop.batch.hive.HiveBatchTest.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="269" opendate="2014-02-13 00:47:37" fixdate="2014-02-13 01:28:37" resolution="Complete">
+		<buginformation>
+			<summary>Update to Boot RC2</summary>
+			<description>There are some breaking changes which are causing compile errors. Nothing major, some boot classes has been moved/renamed, etc.</description>
+			<version>2.0.0.M5</version>
+			<fixedVersion>2.0.0.M6</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.YarnBootClientApplicationListener.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="278" opendate="2014-02-18 09:16:30" fixdate="2014-02-18 12:46:07" resolution="Complete">
+		<buginformation>
+			<summary>JavaConfig and boot properties missing for container allocator</summary>
+			<description>This is needed to be able to configure container resource(mem,cpu) settings for allocator.</description>
+			<version>2.0.0.M5</version>
+			<fixedVersion>2.0.0.M6</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.config.annotation.builders.YarnAppmasterBuilder.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.config.annotation.builders.YarnAppmasterConfigurer.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="276" opendate="2014-02-18 01:32:47" fixdate="2014-02-18 12:47:06" resolution="Complete">
+		<buginformation>
+			<summary>Fix incontinencies in boot config properties</summary>
+			<description>Some of the props are named badly and should reflect how same settings are used in other part of a framework. Some are duplicates and basically a leftovers.</description>
+			<version>2.0.0.M5</version>
+			<fixedVersion>2.0.0.M6</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnBatchProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnContainerAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnClientProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnClientAutoConfiguration.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="280" opendate="2014-02-20 03:49:00" fixdate="2014-02-21 04:21:36" resolution="Complete">
+		<buginformation>
+			<summary>Add missing boot props for classpath</summary>
+			<description>Reflect existing settings from javaconfig/xml into boot config props and tweak auto-configurers.</description>
+			<version>2.0.0.M5</version>
+			<fixedVersion>2.0.0.M6</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnClientProperties.java</file>
+			<file type="M">org.springframework.yarn.config.annotation.configurers.EnvironmentClasspathConfigurer.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnClientAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.config.annotation.configurers.DefaultEnvironmentClasspathConfigurer.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnClientPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="279" opendate="2014-02-20 02:09:16" fixdate="2014-02-21 04:21:57" resolution="Complete">
+		<buginformation>
+			<summary>Allow more precise control of container localized files</summary>
+			<description>In boot app model client copies and distributes files. Container whether it&amp;amp;apos;s YarnAppmaster or YarnContainer gets all files. This is not optimal and wrong in a sense that master files should not go in containers and vice versa. </description>
+			<version>2.0.0.M5</version>
+			<fixedVersion>2.0.0.M6</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnClientProperties.java</file>
+			<file type="M">org.springframework.yarn.fs.DefaultResourceLocalizer.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnAppmasterPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnClientAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnClientPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="325" opendate="2014-04-04 06:57:46" fixdate="2014-04-14 02:05:19" resolution="Complete">
+		<buginformation>
+			<summary>BatchAppmaster should not need keepContextAlive</summary>
+			<description>Currently spring.yarn.appmaster.keepContextAlive needs to be set to false for appmaster to exit.
+Fix so that we don&amp;amp;apos;t need to use that flag.</description>
+			<version>2.0.0.RC2</version>
+			<fixedVersion>2.0.0.RC3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.batch.config.MasterNamespaceTest.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnBatchPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.batch.config.BatchMasterParser.java</file>
+			<file type="M">org.springframework.yarn.batch.am.BatchAppmaster.java</file>
+			<file type="M">org.springframework.yarn.batch.am.AbstractBatchAppmaster.java</file>
+			<file type="M">org.springframework.yarn.config.YarnNamespaceUtils.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnBatchProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.batch.partition.AbstractPartitionHandler.java</file>
+			<file type="D">org.springframework.yarn.boot.support.YarnJobLauncherCommandLineRunner.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="335" opendate="2014-04-29 15:49:12" fixdate="2014-04-30 00:31:59" resolution="Complete">
+		<buginformation>
+			<summary>NPE in TextFileWriter class</summary>
+			<description>There&amp;amp;apos;s an NPE in org.springframework.data.hadoop.store.output.TextFileWriter class in method flush. The condition should be (streamsHolder != null) and not (streamsHolder==null)
+@Override
+	public synchronized  void flush() throws IOException {
+		if (streamsHolder == null) 
+{
+			streamsHolder.getStream().flush();
+		}
+	}</description>
+			<version>2.0.0.RC2</version>
+			<fixedVersion>2.0.0.RC3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="350" opendate="2014-06-05 02:48:42" fixdate="2014-06-05 04:46:05" resolution="Complete">
+		<buginformation>
+			<summary>HashMethodExecutor doesn&amp;apos;t work with negative values </summary>
+			<description>We should always get accurate partitioning by a bucket size. With java a simple modulo doesn&amp;amp;apos;t work with negative values so this needs to be adjusted accordingly.</description>
+			<version>2.0.0.RC4</version>
+			<fixedVersion>2.0.0.GA</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.expression.HashMethodExecutor.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="349" opendate="2014-06-02 01:48:51" fixdate="2014-06-05 04:46:15" resolution="Complete">
+		<buginformation>
+			<summary>YarnInfoApplication using wrong source</summary>
+			<description>YarnInfoApplication should add itself as source for SpringApplicationBuilder instead of YarnPushApplication. Currently doesn&amp;amp;apos;t break anything because from boot point of view those two are identical.</description>
+			<version>2.0.0.RC4</version>
+			<fixedVersion>2.0.0.GA</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.app.YarnInfoApplication.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="365" opendate="2014-07-01 06:27:49" fixdate="2014-07-25 12:39:29" resolution="Complete">
+		<buginformation>
+			<summary>Store writer should not fail on lifecycle</summary>
+			<description>OutputStoreObjectSupport is trying to initialize a state by listing output directory for existing files. This operation will fail if hdfs is not available and we would expect things to go south. Problem is that this happens during the bean lifecycle which is extremely inconvenient for user of this component.
+We should not fail during the lifecycle start and then do any init work when hdfs is available. </description>
+			<version>2.0.0.GA</version>
+			<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.TextFileStoreTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="373" opendate="2014-07-15 12:01:16" fixdate="2014-07-25 12:39:48" resolution="Complete">
+		<buginformation>
+			<summary>Test failure in MindIntegrationRawTests</summary>
+			<description>Random test failures somehow cause by ports. There has been similar issues i.e. with SHDP-138 but these current problems only happen with CI builds.</description>
+			<version>2.0.0.GA</version>
+			<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.integration.ip.mind.MindIntegrationRawTests.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">2023</link>
+		</links>
+	</bug>
+	<bug id="374" opendate="2014-07-24 07:22:34" fixdate="2014-07-25 12:40:00" resolution="Complete">
+		<buginformation>
+			<summary>Race condition for overwrite</summary>
+			<description>org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.getOutput() always opens file using a default create(Path) method which enables overwriting by default. This is not what we want especially because it will create all sort of race conditions if same file is opened from multiple writers.
+This would lead in below hadoop exception:
+
+
+
+
+
+
+java.io.FileNotFoundException: ID mismatch. Request id and saved id: 16399 , 16400
+
+
+
+
+	at org.apache.hadoop.hdfs.server.namenode.INodeId.checkId(INodeId.java:53)
+
+
+
+
+	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.checkLease(FSNamesystem.java:2755)
+
+
+
+
+	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.analyzeFileState(FSNamesystem.java:2543)
+
+
+
+
+	at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:2454)
+
+
+
+
+	at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.addBlock(NameNodeRpcServer.java:555)
+
+
+
+
+
+</description>
+			<version>2.0.1</version>
+			<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">2023</link>
+		</links>
+	</bug>
+	<bug id="375" opendate="2014-07-24 07:58:14" fixdate="2014-07-25 12:40:08" resolution="Complete">
+		<buginformation>
+			<summary>RollingFileNamingStrategy gets into trouble with certain filenames</summary>
+			<description>RollingFileNamingStrategy is using a wrong parsing method trying to find a `rolling` part of a file name to initialize its own counter from where to continue. Problem is simply because code is trying to parse integers from a file name and if it contains numeric part which cannot be parsed, exception is thrown which is not catched.
+
+
+
+
+
+
+Caused by: java.lang.NumberFormatException: For input string: "571195529825"
+
+
+
+
+at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+
+
+
+
+
+
+We just need to make sure that we don&amp;amp;apos;t fail by trying to find the rolling part which should be a last number in a file name.</description>
+			<version>2.0.1</version>
+			<fixedVersion>2.0.2, 2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.strategy.naming.RollingFileNamingStrategyTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.strategy.naming.RollingFileNamingStrategy.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">2023</link>
+		</links>
+	</bug>
+	<bug id="381" opendate="2014-08-13 00:47:43" fixdate="2014-08-13 01:06:43" resolution="Complete">
+		<buginformation>
+			<summary>Boot should support launch context args as list</summary>
+			<description>As of now we can&amp;amp;apos;t define container arguments as list because &amp;amp;apos;launchcontext.arguments&amp;amp;apos; is a map. Introduce new key &amp;amp;apos;launchcontext.argumentsList&amp;amp;apos; which takes a simple list values which keeps the order if that in necessary.</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnAppmasterLaunchContextPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.launch.LaunchCommandsFactoryBean.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.AbstractLaunchContextProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnClientAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnClientLaunchContextPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnAppmasterContainerClusterPropertiesTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="385" opendate="2014-08-20 17:23:57" fixdate="2014-08-22 06:15:53" resolution="Complete">
+		<buginformation>
+			<summary>StaticEventingAppmaster hangs forever with -100 container exit status </summary>
+			<description>In a cluster running Hortonwork HDP 2.1.3, we shut down a NodeManager and all running application containers on that node exited with -100 status (lost node scenario). However, we observed that all staticEventingAppmasters for these containers were hanging forever. 
+Potential cause is that onContainerCompleted() returns without invoking notifyCompleted() given -100 exit status due to a lost node.
+</description>
+			<version>2.0.0.GA</version>
+			<fixedVersion>2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.am.monitor.DefaultContainerMonitor.java</file>
+			<file type="M">org.springframework.yarn.am.monitor.DefaultContainerMonitorTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="390" opendate="2014-08-28 09:56:01" fixdate="2014-08-29 00:01:03" resolution="Complete">
+		<buginformation>
+			<summary>Remote batch step exit code not updated</summary>
+			<description>When remote batch steps are executed on yarn containers, exit_code field is not updated in a database. As shown below exit_code is left to &amp;amp;apos;executing&amp;amp;apos; when is should &amp;amp;apos;completed&amp;amp;apos; or something else depending if step failed.
+
+
+
+
+
+
+STEP_EXECUTION_ID  STEP_NAME               STATUS     EXIT_CODE
+
+
+
+
+-----------------  ----------------------  ---------  ---------
+
+
+
+
+                0  master1                 COMPLETED  COMPLETED
+
+
+
+
+                1  remoteStep1:partition1  COMPLETED  EXECUTING
+
+
+
+
+                2  remoteStep1:partition0  COMPLETED  EXECUTING
+
+
+
+
+                3  master2                 FAILED     FAILED
+
+
+
+
+                4  remoteStep2:partition1  FAILED     EXECUTING
+
+
+
+
+                5  remoteStep2:partition0  FAILED     EXECUTING
+
+
+
+
+                6  master                  COMPLETED  COMPLETED
+
+
+
+
+                7  remoteStep:partition0   COMPLETED  COMPLETED
+
+
+
+
+                8  remoteStep:partition1   COMPLETED  COMPLETED
+
+
+
+
+
+</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.batch.repository.bindings.StepExecutionType.java</file>
+			<file type="M">org.springframework.yarn.batch.repository.JobRepositoryRpcFactory.java</file>
+			<file type="M">org.springframework.yarn.batch.partition.AbstractPartitionHandler.java</file>
+			<file type="M">org.springframework.yarn.batch.container.DefaultBatchYarnContainer.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="394" opendate="2014-09-11 08:58:58" fixdate="2014-09-15 09:18:17" resolution="Complete">
+		<buginformation>
+			<summary>Can&amp;apos;t run mapreduce job in local mode</summary>
+			<description>I would like to run the mapreduce jobs without running any hadoop server or having HDFS to test them. So I use mapreduce.framework.name=local. Unfortunately the org.springframework.data.hadoop.mapreduce.JobUtils#getRunningJob sets this configuration like this:
+
+
+
+
+
+
+				Configuration cfg = job.getConfiguration();
+
+
+
+
+				cfg.set("mapreduce.framework.name", "yarn");
+
+
+
+
+
+
+I could override this while debugging and could run the job but can&amp;amp;apos;t do this from configuration. Can you tell me why is this here and can you remove it or make it configurable or tell me why should I not use local mode?
+I only tested this with 2.0.0-RELEASE but the code is there in version 2.1.0.M1 too.</description>
+			<version>2.0.0.GA</version>
+			<fixedVersion>2.0.3, 2.1.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.mapreduce.JobUtils.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="408" opendate="2014-10-25 03:09:13" fixdate="2014-10-29 14:40:06" resolution="Complete">
+		<buginformation>
+			<summary>DatasetTemplate doesn&amp;apos;t close writer if exception is thrown</summary>
+			<description>If org.springframework.data.hadoop.store.dataset.DatasetTemplate.write(Collection) gets into trouble when underlying writer throws an exception, writer is not closed and dfs client lease is not cleared. Vanilla hadoop 2.5.1 and  cdh5(2.5.0-cdh5.2.0) barks this in logs.
+
+
+
+
+
+
+17:38:22,522  WARN      org.apache.hadoop.hdfs.LeaseRenewer: 458 - Failed to renew lease for [DFSClient_NONMAPREDUCE_-1719730779_11] for 30 seconds.  Will retry shortly ...
+
+
+
+
+java.net.ConnectException: Call From neo.localdomain/127.0.1.1 to localhost:39583 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused
+
+
+
+
+
+
+In these tests minicluster has already been shutdown but dfs client background thread is still trying to renew a lease which will never going to happen. This can be seen i.e. using test org.springframework.data.hadoop.store.dataset.DatasetTemplateNoNullsTests.testWritePojoWithNullValuesShouldFail()</description>
+			<version>2.0.1</version>
+			<fixedVersion>2.0.3, 2.1.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.dataset.DatasetTemplate.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">405</link>
+		</links>
+	</bug>
+	<bug id="409" opendate="2014-10-25 09:03:52" fixdate="2014-11-08 05:47:04" resolution="Complete">
+		<buginformation>
+			<summary>CDH 5.2.0 has awkward functionality for path recreate failure</summary>
+			<description>We do some tricks to find an available path in store writer when we roll filenamingstrategies order to find next available path. Basically we try to create a stream into a file to see if it&amp;amp;apos;s available but we first do a check if path exists.
+If we try to create a file which already exist, hdfs throws error "org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException)" and we move on. This is a way it works in apache hadoop but functionality in cdh is different.
+CDH 5.2.0 on default sees this same error but internally waits 1min before re-trying and does this re-try 5 times. This is literally crazy because we on default try 10 times to find a suitable path which makes our tests to hang 50min for one single path. After a quick debugging there is a some sort of change in retry policies in cdh vs. vanilla hadoop.
+File exist check and a try to open it is never an atomic operation so we need to handle a case where we try to open a file whose path already exist.</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.FileWriteOpenTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">405</link>
+			<link type="Relate" description="relates to">422</link>
+		</links>
+	</bug>
+	<bug id="423" opendate="2014-11-11 11:07:50" fixdate="2014-11-12 05:32:29" resolution="Complete">
+		<buginformation>
+			<summary>Partition writer doesn&amp;apos;t clean resources</summary>
+			<description>AbstractPartitionDataStoreWriter keeps individual writers in a map which doesn&amp;amp;apos;t get cleared when writer closed by a timer. This is a problematic for long running partition writers with a lot of newly created partitions.</description>
+			<version>2.0.3</version>
+			<fixedVersion>2.1.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractPartitionDataStoreWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.PartitionTextFileWriterTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="430" opendate="2014-11-15 01:49:04" fixdate="2014-11-15 02:23:14" resolution="Complete">
+		<buginformation>
+			<summary>YarnContainerClusterMvcEndpoint registered twice</summary>
+			<description>It looks like we get YarnContainerClusterMvcEndpoint under `/yarn_containercluster` and `/yarn_containercluster/yarn_containercluster`. I think this is caused by @RequestMapping which I believe is not needed anymore in boot mvc endpoints and now causes this double.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpointTests.java</file>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpoint.java</file>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterWithCustomProjectionsMvcEndpointTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="427" opendate="2014-11-14 06:25:56" fixdate="2014-11-20 08:04:09" resolution="Complete">
+		<buginformation>
+			<summary>DefaultPartitionStrategy doesn&amp;apos;t use spel compiler</summary>
+			<description>We made spel compiler enhancements to MessagePartitionStrategy which only exist in tests but is copied over to XD. Need to do same tweaks for DefaultPartitionStrategy which is map based.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.expression.MapExpressionMethods.java</file>
+			<file type="M">org.springframework.data.hadoop.store.partition.DefaultPartitionStrategy.java</file>
+			<file type="D">org.springframework.data.hadoop.store.partition.PartitionPerfTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="436" opendate="2014-11-23 14:19:54" fixdate="2014-12-02 02:21:05" resolution="Complete">
+		<buginformation>
+			<summary>PartitionTextFileWriter may leave in-use prefix/suffix behind</summary>
+			<description>It looks like that when PartitionTextFileWriter is used with an idleTimeout and we have a lot of concurrency and context/jvm is killed, running task to close/rename file(when in-use prefix/suffix is used) gets killed and we either lose data or file ends up having in-use prefix/suffix.
+This is caused by at least because of two things we don&amp;amp;apos;t do, 1) in AbstractPartitionDataStoreWriter.doStop() we don&amp;amp;apos;t call sub writes stop(), 2) in PollingTaskSupport.stop() we don&amp;amp;apos;t wait underlying runningTask to finish.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractPartitionDataStoreWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.StoreObjectSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.ContextCloseWriterTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.PollingTaskSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.TestUtils.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="447" opendate="2014-12-05 02:52:30" fixdate="2014-12-05 03:03:10" resolution="Complete">
+		<buginformation>
+			<summary>PartitionTextFileWriter doesn&amp;apos;t stop TextFileWriter</summary>
+			<description>In `PartitionTextFileWriter.createWriter(Configuration, Path, CodecInfo)` we create anonymous TextFileWriter to override its `close()` method order to clear writers away from AbstractPartitionDataStoreWriter. However we don&amp;amp;apos;t shutdown `TextFileWriter` and thus its idle timeout task is kept running which later is causing trouble to clear correct writers away from partition writer.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="356" opendate="2014-06-18 12:59:38" fixdate="2014-12-08 01:08:21" resolution="Complete">
+		<buginformation>
+			<summary>Remove unsupported lzo codecs.</summary>
+			<description>Docs are a little misleading for usage of LZO, SLZO, LZOP and SLZOP. Lets just leave lzo there because additional split work by twitter is not truly split stream on codec level. Or at least they never implemented the SplittableCompressionCodec interface which makes is unusable outside of MR record reader.</description>
+			<version>2.0.0.GA</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.codec.Codecs.java</file>
+			<file type="M">org.springframework.data.hadoop.store.TextFileStoreTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="460" opendate="2015-01-08 02:01:43" fixdate="2015-01-11 08:15:12" resolution="Complete">
+		<buginformation>
+			<summary>Fix typo in YarnPushCommand</summary>
+			<description>YarnPushCommand prints wrong info.
+
+
+
+
+
+
+handleOutput("New instance submitted");
+
+
+
+
+
+
+should be something like `New application pushed".</description>
+			<version>2.1.0.M3</version>
+			<fixedVersion>2.1.0 RC1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.cli.YarnPushCommand.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="469" opendate="2015-01-25 02:15:32" fixdate="2015-01-25 08:42:44" resolution="Complete">
+		<buginformation>
+			<summary>DefaultYarnContainer should not exit without @YarnComponent</summary>
+			<description>DefaultYarnContainer is a default when run/configured via boot and is really expected to be used together with one or more @YarnComponent. Possible method return values are then used to send event which ContainerLauncherRunner catches and does a real context/app exit. However if no @YarnComponent methods are used, thus not results, container exists immediately which something we don&amp;amp;apos;t want or something user expects.
+We should simple disable container end state processing if there are no @YarnComponent and thus there are no results. This is better expected functionality especially if container simply fires up rest methods and want to stay running. Order to exit gracefully from container user can still add @YarnComponent method and either sleep there or return Future and set return value later using a Future handle.</description>
+			<version>2.1.0 RC1</version>
+			<fixedVersion>2.1.0.GA</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.container.DefaultYarnContainerTests.java</file>
+			<file type="M">org.springframework.yarn.container.DefaultYarnContainer.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="482" opendate="2015-03-06 00:28:47" fixdate="2015-03-09 02:30:47" resolution="Complete">
+		<buginformation>
+			<summary>TextFileWriter unable to continue after close errors</summary>
+			<description>If we have a TextFileWriter with naming rollover and other normal settings we get into trouble if datanode dies or is restarted. </description>
+			<version>2.1.0.GA</version>
+			<fixedVersion>2.0.5, 2.1.1, 2.2.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">2774</link>
+		</links>
+	</bug>
+	<bug id="476" opendate="2015-02-04 00:39:18" fixdate="2015-03-09 04:45:19" resolution="Complete">
+		<buginformation>
+			<summary>Annotation config doesn&amp;apos;t always use beans</summary>
+			<description>AbstractImportingAnnotationConfiguration is used to hook adapter model in cases where bean definition is created manually using an import selector. Looks like build command to processing framework happens too early and @Bean methods inside @Configuration are not yet created.
+i.e. in below example @Bean &amp;amp;apos;partitionStrategy&amp;amp;apos; ended up to be a different instance that the one returned by a to partitionStrategy() from a configure method.
+
+
+
+
+
+
+@Configuration
+
+
+
+
+@EnableDataStorePartitionTextWriter(name=WRITER5_ID)
+
+
+
+
+static class Config5 extends SpringDataStoreTextWriterConfigurerAdapter {
+
+
+
+
+
+
+
+
+
+	@Override
+
+
+
+
+	public void configure(DataStoreTextWriterConfigurer config) throws Exception {
+
+
+
+
+		config
+
+
+
+
+			.basePath("/tmp/foo4")
+
+
+
+
+			.withPartitionStrategy()
+
+
+
+
+				.custom(partitionStrategy());
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+	@Bean
+
+
+
+
+	public PartitionStrategy&amp;lt;String, String&amp;gt; partitionStrategy() {
+
+
+
+
+		return new PartitionStrategy&amp;lt;String, String&amp;gt;() {
+
+
+
+
+
+
+
+
+
+			@Override
+
+
+
+
+			public PartitionResolver&amp;lt;String&amp;gt; getPartitionResolver() {
+
+
+
+
+				return null;
+
+
+
+
+			}
+
+
+
+
+
+
+
+
+
+			@Override
+
+
+
+
+			public PartitionKeyResolver&amp;lt;String, String&amp;gt; getPartitionKeyResolver() {
+
+
+
+
+				return null;
+
+
+
+
+			}
+
+
+
+
+		};
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+</description>
+			<version>2.1.0.GA</version>
+			<fixedVersion>2.1.1, 2.2.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.config.common.annotation.AbstractImportingAnnotationConfiguration.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultRolloverStrategyConfigurer.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.builders.DataStoreTextWriterBuilder.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.SpringTextWriterConfigurationTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.SpringDataStoreWriterConfigs.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultNamingStrategyConfigurer.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configuration.SpringDataStoreTextWriterConfiguration.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.builders.SpringDataStoreTextWriterBuilder.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultPartitionStrategyConfigurer.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">438</link>
+		</links>
+	</bug>
+	<bug id="510" opendate="2015-07-17 08:28:47" fixdate="2015-07-17 09:01:24" resolution="Complete">
+		<buginformation>
+			<summary>Append reopen may fail</summary>
+			<description>With hadoop 2.7.1 TextFileStoreAppendTests.testWriteAppendReopen fails with:
+
+
+
+
+
+
+org.apache.hadoop.fs.ChecksumException: Checksum error: /tmp/TextFileStoreAppendTests/default at 0 exp: 1355388271 got: 272615628
+
+
+
+
+	at org.apache.hadoop.util.DataChecksum.verifyChunkedSums(DataChecksum.java:325)
+
+
+
+
+	at org.apache.hadoop.hdfs.RemoteBlockReader2.readNextPacket(RemoteBlockReader2.java:231)
+
+
+
+
+	at org.apache.hadoop.hdfs.RemoteBlockReader2.read(RemoteBlockReader2.java:152)
+
+
+
+
+	at org.apache.hadoop.hdfs.DFSInputStream$ByteArrayStrategy.doRead(DFSInputStream.java:737)
+
+
+
+
+	at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:793)
+
+
+
+
+	at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:853)
+
+
+
+
+	at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:896)
+
+
+
+
+	at java.io.DataInputStream.read(DataInputStream.java:100)
+
+
+
+
+	at org.apache.hadoop.util.LineReader.fillBuffer(LineReader.java:180)
+
+
+
+
+	at org.apache.hadoop.util.LineReader.readDefaultLine(LineReader.java:216)
+
+
+
+
+	at org.apache.hadoop.util.LineReader.readLine(LineReader.java:174)
+
+
+
+
+	at org.apache.hadoop.util.LineReader.readLine(LineReader.java:370)
+
+
+
+
+	at org.springframework.data.hadoop.store.input.TextFileReader$1.doRead(TextFileReader.java:110)
+
+
+
+
+
+
+It looks like closing a second append writer before read fixes this error. </description>
+			<version>2.2.0.GA</version>
+			<fixedVersion>2.3.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.TextFileStoreAppendTests.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Relate" description="relates to">536</link>
+		</links>
+	</bug>
+	<bug id="515" opendate="2015-08-11 10:31:45" fixdate="2015-08-13 05:29:26" resolution="Complete">
+		<buginformation>
+			<summary>Support dots in yarn container group names</summary>
+			<description>If we have a group name `foo.jee`, request for `/yarn_containercluster/foo.jee` fails because on default Spring MVC bindings will remove `.jee` assuming it is a file delimiter.</description>
+			<version>2.2.0.GA</version>
+			<fixedVersion>2.3.0 M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpointTests.java</file>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpoint.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="531" opendate="2015-10-26 18:35:10" fixdate="2015-10-30 08:16:50" resolution="Complete">
+		<buginformation>
+			<summary>AppmasterLauncherRunner can call exit() twice causing jvm to block</summary>
+			<description>Its possible for the AppmasterLauncherRunners.class to receive two appmaster state events when being used with StaticAppmaster. This causes System.exit to be called twice and is  causing the jvm to block indefinitely. From the jvm docs for Runtime.exit(),
+"If this method is invoked after the virtual machine has begun its shutdown sequence then if shutdown hooks are being run this method will block indefinitely. If shutdown hooks have already been run and on-exit finalization has been enabled then this method halts the virtual machine with the given status code if the status is nonzero; otherwise, it blocks indefinitely.
+The System.exit method is the conventional and convenient means of invoking this method."
+I get two of these lines in my logs, the second being the last entry.
+INFO [Thread-2]  CommandLineRunnerSupport: About to exit using code= 0</description>
+			<version>2.3.0.RC1</version>
+			<fixedVersion>2.3.0 RC2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.AppmasterLauncherRunner.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="532" opendate="2015-11-09 15:05:30" fixdate="2015-11-09 15:48:17" resolution="Complete">
+		<buginformation>
+			<summary>Container cluster may start wrong member</summary>
+			<description>Defining two groups and starting only one may result first allocated container to get matched from a group which is not running, effectively starting a wrong container. Looks to be caused be a fact that grid projection is attached to projected grid when cluster is created thus allowing projection to get matched there.
+Should handle this so that attach doesn&amp;amp;apos;t happen until group is started.</description>
+			<version>2.3.0.RC1</version>
+			<fixedVersion>2.3.0 RC2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpointTests.java</file>
+			<file type="M">org.springframework.yarn.am.cluster.AbstractContainerClusterAppmaster.java</file>
+			<file type="M">org.springframework.yarn.am.cluster.ContainerClusterStateMachineConfiguration.java</file>
+			<file type="M">org.springframework.yarn.am.cluster.ManagedContainerClusterAppmasterMultiTests.java</file>
+			<file type="M">org.springframework.yarn.am.cluster.AbstractManagedContainerClusterAppmasterTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="562" opendate="2016-04-28 09:59:07" fixdate="2016-06-13 16:52:05" resolution="Complete">
+		<buginformation>
+			<summary>Missing trailing slash on spring.yarn.applicationDir path fails to localize</summary>
+			<description>If the trailing slash is not included in the spring.yarn.applicationDir property then the relevant files are distributed to HDFS but they are not then localized to the appmaster/container.
+There are two minor issues with this:
+
+This could be automatically handled to allow the files to be localized correctly.
+The only error is when launch_container.sh fails with Error: Unable to access jarfile, which does not help with identifying the issue.
+
+</description>
+			<version>2.3.0 GA</version>
+			<fixedVersion>2.4.0 RC1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.support.SpringYarnBootUtils.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="572" opendate="2016-09-08 22:56:46" fixdate="2016-12-15 18:12:33" resolution="Complete">
+		<buginformation>
+			<summary>FsShell.chgrp fires a chmod operation on hadoop instead of chgrp</summary>
+			<description>org.springframework.data.hadoop.fs.FsShell shell;
+.
+.
+.
+shell.chgrp(true, "group1", "/path/to/hdfs/folder"); 
+On execution, this line fails with:-
+Caused by: java.lang.IllegalArgumentException: chmod : mode &amp;amp;apos;group1&amp;amp;apos; does not match the expected pattern.
+        at org.apache.hadoop.fs.FsShellPermissions$Chmod.processOptions(FsShellPermissions.java:93) ~[hadoop-common-2.7.1.jar!/:na]
+        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.8.0_77]
+        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[na:1.8.0_77]
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.8.0_77]
+        at java.lang.reflect.Method.invoke(Method.java:498) ~[na:1.8.0_77]
+        at org.springframework.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:216) ~[spring-core-4.2.4.RELEASE.jar!/:4.2.4.RELEASE]
+        at org.springframework.data.hadoop.fs.FsShellPermissions.changePermissions(FsShellPermissions.java:102) ~[spring-data-hadoop-core-2.3.0.M3.jar!/:2.3.0.M3]
+        at org.springframework.data.hadoop.fs.FsShell.chgrp(FsShell.java:178) ~[spring-data-hadoop-core-2.3.0.M3.jar!/:2.3.0.M3]
+        at org.springframework.data.hadoop.fs.FsShell.chgrp(FsShell.java:174) ~[spring-data-hadoop-core-2.3.0.M3.jar!/:2.3.0.M3]</description>
+			<version>2.3.0 M3</version>
+			<fixedVersion>2.4.1, 2.5.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.fs.FsShell.java</file>
+			<file type="M">org.springframework.data.hadoop.fs.FsShellPermissions.java</file>
+		</fixedFiles>
+	</bug>
+</bugrepository>

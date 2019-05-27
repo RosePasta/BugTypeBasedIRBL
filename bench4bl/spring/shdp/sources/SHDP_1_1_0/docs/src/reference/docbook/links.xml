@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0" xml:id="links" xmlns="http://docbook.org/ns/docbook"
+         xmlns:ns6="http://www.w3.org/1999/xlink"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1999/xhtml"
+         xmlns:ns3="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Useful Links</title>
+
+  <itemizedlist>
+    <listitem>
+      <emphasis>Spring for Apache Hadoop</emphasis>
+
+       - 
+
+      <ulink
+      url="http://www.springframework.org/spring-data/hadoop">http://www.springframework.org/spring-data/hadoop</ulink>
+    </listitem>
+
+    <listitem>
+      <emphasis>Spring Data</emphasis>
+
+       - 
+
+      <ulink
+      url="http://www.springframework.org/spring-data">http://www.springframework.org/spring-data</ulink>
+    </listitem>
+
+    <listitem>
+      <emphasis>Spring Data Book</emphasis>
+
+       - 
+
+      <ulink
+      url="http://shop.oreilly.com/product/0636920024767.do">http://shop.oreilly.com/product/0636920024767.do</ulink>
+    </listitem>
+
+    <listitem>
+      <emphasis>Spring</emphasis>
+
+       - 
+
+      <ulink
+      url="http://spring.io/blog/">http://spring.io/blog/</ulink>
+    </listitem>
+
+    <listitem>
+      <emphasis>Apache Hadoop</emphasis>
+
+       - 
+
+      <ulink url="http://hadoop.apache.org/">http://hadoop.apache.org/</ulink>
+    </listitem>
+
+    <listitem>
+      <emphasis>Pivotal HD</emphasis>
+
+       - 
+
+      <ulink
+      url="http://gopivotal.com/pivotal-products/pivotal-data-fabric/pivotal-hd">http://gopivotal.com/pivotal-products/pivotal-data-fabric/pivotal-hd</ulink>
+    </listitem>
+  </itemizedlist>
+</chapter>

@@ -1,0 +1,1354 @@
+description = 'Spring for Apache Hadoop'
+
+defaultTasks 'build'
+
+buildscript {
+	repositories {
+		maven { url "http://repo.spring.io/plugins-release" }
+		maven { url "http://repo.spring.io/plugins-snapshot" }
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion")
+		classpath("org.springframework.build.gradle:propdeps-plugin:0.0.7")
+		classpath("org.springframework.build.gradle:spring-io-plugin:0.0.3.RELEASE")
+		classpath('org.asciidoctor:asciidoctor-gradle-plugin:1.5.2')
+		classpath("io.spring.gradle:docbook-reference-plugin:0.3.1")
+	}
+}
+
+allprojects {
+	group = 'org.springframework.data'
+
+	repositories {
+		mavenCentral()
+		maven { url 'http://repo.spring.io/libs-release' }
+		maven { url 'http://repo.spring.io/libs-milestone' }
+	}
+}
+
+def javaProjects() {
+	subprojects.findAll { project -> project.name != 'docs' }
+}
+
+def hadoopProjects() {
+	subprojects.findAll { project -> project.name.contains('-hadoop-') }
+}
+
+def yarnProjects() {
+	subprojects.findAll { project -> project.name.contains('-yarn-') }
+}
+
+def forceDependencyVersions(project, distro) {
+	project.configurations.all { configuration ->
+		if ('versionManagement' != configuration.name) {
+			switch (distro) {
+				case "cdh5":
+					resolutionStrategy {
+						eachDependency { details ->
+							if (details.requested.group == 'com.google.guava') {
+								// simply force guava what cdh bundles
+								// because curator pulls newer guava version
+								details.useVersion '11.0.2'
+							}
+						}
+					}
+				break;
+			}
+		}
+	}
+}
+
+println "Using Spring Framework version: [$springVersion]"
+println "Using Java version: [" + System.getProperty("java.version") + "]"
+
+//
+//  Select the Hadoop distribution used for building the binaries
+//
+def List hadoopArtifacts = []
+def List hadoopTestArtifacts = []
+def hadoopDefault = "hadoop27"
+def hadoopDistro = project.hasProperty("distro") ? project.getProperty("distro") : hadoopDefault
+def hadoopVersion = "default"
+// hadoopVanillaVersion for used in docs
+def hadoopVanillaVersion = hd27Version
+
+// Common Hadoop libraries
+def hiveVersion = defaultHiveVersion
+def pigVersion = defaultPigVersion
+def hbaseVersion = defaultHbaseVersion
+def List hbaseArtifacts = []
+def sqoop2Version = defaultSqoop2Version
+def sparkVersion = defaultSparkVersion
+
+// handle older Hive version
+def hiveGroup = "org.apache.hive"
+
+// make it possible to use Pig jars compiled for Hadoop 2.0
+def pigQualifier = ''
+
+// default is Hadoop 2.7.x
+switch (hadoopDistro) {
+
+	// Cloudera CDH5 YARN 2.3.x base
+	case "cdh5":
+		hadoopVersion = cdh5Version
+		println "Using Cloudera CDH5 [$hadoopVersion]"
+		hbaseVersion = cdh5HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = cdh5HiveVersion
+		pigVersion = cdh5PigVersion
+		sparkVersion = cdh5SparkVersion
+		sqoop2Version = cdh5Sqoop2Version
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		break;
+
+	// Pivotal HD 2.1
+	case "phd21":
+		hadoopVersion = phd21Version
+		println "Using Pivotal HD 2.1 - [$hadoopVersion]"
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		hbaseVersion = phd21HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = phd21HiveVersion
+		pigVersion = phd21PigVersion
+		pigQualifier = ':h2'
+		sparkVersion = phd21SparkVersion
+		break;
+
+	// Pivotal HD 3.0
+	case "phd30":
+		hadoopVersion = phd30Version
+		println "Using Pivotal HD 3.0 - [$hadoopVersion]"
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		hbaseVersion = phd30HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = phd30HiveVersion
+		pigVersion = phd30PigVersion
+		pigQualifier = ':h2'
+		sparkVersion = phd30SparkVersion
+		break;
+
+	// Hortonworks Data Platform 2.3
+	case "hdp23":
+		hadoopVersion = hdp23Version
+		println "Using Hortonworks Data Platform 2.3 [$hadoopVersion]"
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		hbaseVersion = hdp23HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = hdp23HiveVersion
+		pigVersion = hdp23PigVersion
+		pigQualifier = ':h2'
+		sparkVersion = hdp23SparkVersion
+		break;
+
+	// Hadoop 2.6.x
+	case "hadoop26":
+		hadoopVersion = hd26Version
+		println "Using Apache Hadoop 2.6.x - [$hadoopVersion]"
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		hbaseVersion = hd26HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = hd26HiveVersion
+		pigVersion = hd26PigVersion
+		pigQualifier = ':h2'
+		break;
+
+	// Hadoop 2.7.x
+	default:
+		hadoopVersion = hd27Version
+		if (!project.hasProperty("distro")) {
+			println "Using default distro: Apache Hadoop [$hadoopVersion]"
+		} else {
+			if (hadoopDistro == hadoopDefault) {
+				println "Using Apache Hadoop 2.7.x - [$hadoopVersion]"
+			} else {
+				println "Failing build: $hadoopDistro is not a supported distro"
+				println "Supported distros: hadoop26, hadoop27[*], hdp23, cdh5, phd21 and phd30"
+				println "* default"
+				throw new InvalidUserDataException("$hadoopDistro is not a supported distro")
+			}
+		}
+		hadoopArtifacts = ["org.apache.hadoop:hadoop-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-hdfs:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-yarn-common:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+				   "org.apache.hadoop:hadoop-distcp:$hadoopVersion"]
+		hadoopTestArtifacts = ["org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-common:$hadoopVersion:tests",
+					"org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopVersion",
+					"org.apache.hadoop:hadoop-mapreduce-client-hs:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion",
+					"org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests"]
+		hbaseVersion = hd27HbaseVersion
+		hbaseArtifacts = ["org.apache.hbase:hbase:$hbaseVersion",
+				  "org.apache.hbase:hbase-common:$hbaseVersion",
+				  "org.apache.hbase:hbase-client:$hbaseVersion"]
+		hiveVersion = hd27HiveVersion
+		pigVersion = hd27PigVersion
+		pigQualifier = ':h2'
+}
+
+configure(javaProjects()) {
+
+	apply plugin: 'java'
+	apply from:   "${rootProject.projectDir}/maven.gradle"
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
+	apply plugin: 'propdeps'
+	apply plugin: 'propdeps-idea'
+	apply plugin: 'propdeps-eclipse'
+
+	if (project.hasProperty('platformVersion')) {
+		apply plugin: 'spring-io'
+
+		repositories {
+			maven { url "https://repo.spring.io/libs-snapshot" }
+		}
+
+		dependencies {
+			springIoVersions "io.spring.platform:platform-versions:${platformVersion}@properties"
+		}
+	}
+
+	if (project.hasProperty('testJavaLibraryPath')) {
+		test {
+			systemProperty "java.library.path", "${testJavaLibraryPath}"
+		}
+	}
+
+	if (project.hasProperty('testJavaClasspath')) {
+		dependencies {
+			testRuntime files("${testJavaClasspath}")
+		}
+	}
+
+	forceDependencyVersions(it, 'cdh5')
+
+	sourceCompatibility=1.7
+	targetCompatibility=1.7
+
+	// assume we are skipping these tests (must be enabled explicitly)
+	ext.skipPig = true
+	ext.skipHive = true
+	ext.skipHBase = true
+	ext.skipWebHdfs = true
+	ext.skipSpark = true
+	ext.skipSqoop2 = true
+
+	test {
+		systemProperty("testGroups", project.properties.get("testGroups"))
+	}
+
+	// exclude poms from the classpath (pulled in by Cloudera)
+	eclipse.classpath.file {
+		whenMerged { classpath ->
+			classpath.entries.removeAll { entry -> entry.toString().contains(".pom") }
+			classpath.entries.removeAll { entry -> entry.toString().contains("servlet-api") }
+			classpath.entries.removeAll { entry -> entry.toString().contains("jline") && !entry.toString().contains("jline-2")  }
+		}
+	}
+
+	eclipse {
+		project {
+			natures += 'org.springframework.ide.eclipse.core.springnature'
+		}
+	}
+
+	// dependencies that are common across all java projects
+	dependencies {
+		compile "org.springframework:spring-aop:$springVersion"
+		compile "org.springframework:spring-context:$springVersion"
+		compile "org.springframework:spring-context-support:$springVersion"
+		compile "org.springframework:spring-jdbc:$springVersion"
+		compile "org.springframework:spring-tx:$springVersion"
+	}
+
+	task sourcesJar(type: Jar) {
+		classifier = 'sources'
+		from sourceSets.main.allJava
+	}
+
+	task testJar(type: Jar) {
+		classifier = 'tests'
+		from sourceSets.test.output
+	}
+
+	task javadocJar(type: Jar) {
+		classifier = 'javadoc'
+		from javadoc
+	}
+
+	artifacts {
+		archives sourcesJar
+		archives javadocJar
+	}
+
+	assemble.dependsOn = ['jar', 'sourcesJar', 'testJar']
+
+	javadoc {
+		ext.srcDir = file("${projectDir}/docs/src/api")
+	  
+		configure(options) {
+			stylesheetFile = file("${rootProject.projectDir}/docs/src/api/stylesheet.css")
+			overview = "${rootProject.projectDir}/docs/src/api/overview.html"
+			docFilesSubDirs = true
+			outputLevel = org.gradle.external.javadoc.JavadocOutputLevel.QUIET
+			breakIterator = true
+			author = true
+			showFromProtected()
+
+	//		groups = [
+	//		'Spring Data Hadoop' : ['org.springframework.data.hadoop*'],
+	//		]
+  
+			links = [
+				"http://docs.spring.io/spring/docs/4.0.x/javadoc-api/",
+				"http://docs.oracle.com/javase/6/docs/api/",
+				"http://commons.apache.org/proper/commons-logging/apidocs/",
+				"http://logging.apache.org/log4j/1.2/apidocs/",
+				"http://hadoop.apache.org/common/docs/current/api/",
+				"http://hbase.apache.org/apidocs/",
+				"http://pig.apache.org/docs/r0.12.0/api/",
+				"http://hive.apache.org/javadocs/r0.12.0/api/",
+				"http://docs.spring.io/spring-batch/apidocs/",
+				"http://docs.spring.io/spring-integration/api/"
+			]
+
+			exclude "org/springframework/data/hadoop/config/**"
+	  	}
+
+		title = "${rootProject.description} ${version} API"
+	}
+
+	jar {
+		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+		manifest.attributes['Implementation-Title'] = 'spring-data-hadoop'
+		manifest.attributes['Implementation-Version'] = project.version
+		manifest.attributes['Implementation-URL'] = "http://projects.spring.io/spring-hadoop/"
+		manifest.attributes['Implementation-Vendor'] = "Spring by Pivotal"
+		manifest.attributes['Implementation-Vendor-Id'] = "org.springframework"
+
+		def build = System.env['SHDP.BUILD']
+		if (build != null)
+			manifest.attributes['Build'] = build
+
+		String rev = "unknown"
+
+		// parse the git files to find out the revision
+		File gitHead = file('.git/HEAD')
+		if (gitHead.exists()) {
+			gitHead = file('.git/' + gitHead.text.trim().replace('ref: ',''))
+			if (gitHead.exists()) { rev = gitHead.text }
+		}
+
+		from("$rootDir/docs/src/info") {
+			include "license.txt"
+			include "notice.txt"
+			into "META-INF"
+			expand(copyright: new Date().format('yyyy'), version: project.version)
+		}
+
+		manifest.attributes['Repository-Revision'] = rev
+	}
+
+}
+
+configure(hadoopProjects()) {
+
+	// default is Hadoop 2.6.x
+	switch (hadoopDistro) {
+
+		// Cloudera CDH5 YARN
+		case "cdh5":
+			dependencies {
+				compile("org.apache.hadoop:hadoop-common:$cdh5Version")
+				compile("org.apache.hadoop:hadoop-mapreduce-client-core:$cdh5Version")
+				compile("org.apache.hadoop:hadoop-distcp:$cdh5Version")
+				compile("org.apache.hadoop:hadoop-hdfs:$cdh5Version")
+				optional("org.apache.hadoop:hadoop-streaming:$cdh5Version")
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+			break;	
+
+		// Pivotal HD 2.1
+		case "phd21":
+			dependencies {
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+			break;
+
+		// Pivotal HD 3.0
+		case "phd30":
+			dependencies {
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+			break;
+
+		// Hortonworks Data Platform 2.3
+		case "hdp23":
+			dependencies {
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+			break;
+
+		// Hadoop 2.6.x
+		case "hadoop26":
+			dependencies {
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+			break;
+
+		// Hadoop 2.7.x
+		default:
+			dependencies {
+				testCompile "org.apache.hadoop:hadoop-mapreduce-examples:$hadoopVersion"
+				testRuntime "org.apache.hadoop:hadoop-mapreduce-client-jobclient:$hadoopVersion"
+				testRuntime "dk.brics.automaton:automaton:1.11-8"
+			}
+	}
+
+	dependencies {
+		hadoopArtifacts.each {
+			compile(it) { dep ->
+				if (it.contains("hadoop-common") || 
+					it.contains("hadoop-yarn-common") ||
+					it.contains("hadoop-mapreduce-client-core") ||
+					it.contains("hadoop-mapreduce-client-app") ||
+					it.contains("hadoop-mapreduce-client-hs") ||
+					it.contains("hadoop-mapreduce-client-jobclient") ||
+					it.contains("hive-service")) { 
+					exclude group: "org.slf4j", module: "slf4j-log4j12"
+				}
+				if (it.contains("hadoop-common") ||
+					it.contains("hadoop-hdfs") ||
+					it.contains("hadoop-mapreduce-client-core") ||
+					it.contains("hadoop-mapreduce-client-jobclient") || 
+					it.contains("hadoop-yarn-common") ||
+					it.contains("hadoop-yarn-client") ||
+					it.contains("hadoop-yarn-server-tests") ||
+					it.contains("hive-service") ||
+					it.contains("hbase-common")) {
+					exclude group: "log4j", module: "log4j"
+				}
+			}
+		}
+
+		// Logging - using commons-logging from spring-core
+		testRuntime("log4j:log4j:$log4jVersion")
+
+		// Spring Framework
+		// context-support -> spring-aop/beans/core -> commons-logging
+		compile "org.springframework:spring-context-support:$springVersion"
+		// used for DAO exceptions by Pig/HBase/Hive packages
+		optional("org.springframework:spring-tx:$springVersion")
+		// used by Hive package
+		optional("org.springframework:spring-jdbc:$springVersion")
+	
+		// Missing dependency in Hadoop 1.0.3
+		testRuntime "commons-io:commons-io:$commonsioVersion"
+		testRuntime "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
+		testRuntime "cglib:cglib-nodep:$cglibVersion"
+
+		// Hive
+		optional("$hiveGroup:hive-service:$hiveVersion")
+	
+		// needed by JDBC test
+		testRuntime "$hiveGroup:hive-jdbc:$hiveVersion"
+	
+		// Pig
+		optional("org.apache.pig:pig:$pigVersion$pigQualifier") { dep ->
+			exclude group: "junit", module: "junit"
+		}
+	
+		// HBase
+		hbaseArtifacts.each {
+			optional(it)
+		}
+
+		// Testing
+		testCompile "junit:junit:$junitVersion"
+	}
+
+}
+
+configure(rootProject) {
+
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
+	apply plugin: 'org.asciidoctor.gradle.asciidoctor'
+	apply plugin: "docbook-reference"
+
+	ext.expandPlaceholders = ""
+
+	reference {
+		sourceDir = new File(asciidoctor.outputDir , 'docbook5')
+		pdfFilename = "spring-data-hadoop-reference.pdf"
+		epubFilename = "spring-data-hadoop-reference.epub"
+		expandPlaceholders = ""
+	}
+
+	afterEvaluate {
+		tasks.findAll { it.name.startsWith("reference") }.each{ it.dependsOn.add("asciidoctor") }
+	}
+
+	asciidoctorj {
+		version = '1.5.2'
+	}
+
+	asciidoctor {
+		sourceDir = file("docs/src/reference/asciidoc")
+		backends = ['docbook5']
+		options eruby: 'erubis'
+		attributes docinfo: '',
+			copycss : '',
+			icons : 'font',
+			'source-highlighter': 'prettify',
+			sectanchors : '',
+			toc2: '',
+			idprefix: '',
+			idseparator: '-',
+			doctype: 'book',
+			numbered: '',
+			'spring-hadoop-version' : project.version,
+			'spring-version' : springVersion,
+			'hadoop-version' : hadoopVanillaVersion,
+			revnumber : project.version
+	}
+
+	// don't publish the default jar for the root project
+	configurations.archives.artifacts.clear()
+
+	task api(type: Javadoc) {
+		group = "Documentation"
+		description = "Generates aggregated Javadoc API documentation."
+		title = "${rootProject.description} ${version} API"
+
+		dependsOn {
+			subprojects.collect {
+				it.tasks.getByName("jar")
+			}
+		}
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = rootProject.description
+		options.overview = "docs/src/api/overview.html"
+		options.stylesheetFile = file("docs/src/api/stylesheet.css")
+		options.splitIndex = true
+		//options.links(project.ext.javadocLinks)
+
+		source subprojects.collect { project ->
+			project.sourceSets.main.allJava
+		}
+
+		maxMemory = "1024m"
+		destinationDir = new File(buildDir, "api")
+
+		doFirst {
+			classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
+		}
+	}
+
+	task docsZip(type: Zip) {
+		group = "Distribution"
+		baseName = "spring-data-hadoop"
+		classifier = "docs"
+		description = "Builds -${classifier} archive containing api and reference " +
+			"for deployment at http://static.springframework.org/spring-hadoop/docs."
+
+		from("docs/src/info") {
+			include "changelog.txt"
+		}
+
+		from (api) {
+			into "api"
+		}
+
+		from (reference) {
+			into "reference"
+		}
+	}
+
+	task schemaZip(type: Zip) {
+		group = "Distribution"
+		baseName = "spring-data-hadoop"
+		classifier = "schema"
+		description = "Builds -${classifier} archive containing all " +
+			"XSDs for deployment at http://springframework.org/schema."
+
+		subprojects.each { subproject ->
+			def Properties schemas = new Properties();
+
+			subproject.sourceSets.main.resources.find {
+				it.path.endsWith("META-INF/spring.schemas")
+			}?.withInputStream { schemas.load(it) }
+
+			for (def key : schemas.keySet()) {
+				def shortName = key.replaceAll(/http.*schema.(.*).spring-.*/, '$1')
+				assert shortName != key
+				File xsdFile = subproject.sourceSets.main.resources.find {
+					it.path.endsWith(schemas.get(key))
+				}
+				assert xsdFile != null
+				into (shortName) {
+					from xsdFile.path
+				}
+			}
+		}
+	}
+
+	task distZip(type: Zip, dependsOn: [docsZip, schemaZip]) {
+		group = "Distribution"
+		baseName = "spring-data-hadoop"
+		classifier = "dist"
+		description = "Builds -${classifier} archive, containing all jars and docs, " +
+					"suitable for community download page."
+
+		ext.baseDir = "${baseName}-${project.version}";
+
+		from("docs/src/info") {
+			include "readme.txt"
+			include "license.txt"
+			include "notice.txt"
+			into "${baseDir}"
+			expand(copyright: new Date().format("yyyy"), version: project.version)
+		}
+
+		from(zipTree(docsZip.archivePath)) {
+			into "${baseDir}/docs"
+		}
+
+		from(zipTree(schemaZip.archivePath)) {
+			into "${baseDir}/schema"
+		}
+
+		subprojects.each { subproject ->
+			into ("${baseDir}/libs") {
+				from subproject.jar
+				if (subproject.tasks.findByPath("sourcesJar")) {
+					from subproject.sourcesJar
+				}
+				if (subproject.tasks.findByPath("javadocJar")) {
+					from subproject.javadocJar
+				}
+			}
+		}
+	}
+
+	artifacts {
+		archives docsZip
+		archives schemaZip
+		archives distZip
+	}
+
+}
+
+project('spring-data-hadoop-core') {
+	description = 'Spring for Apache Hadoop Core'
+}
+
+project('spring-data-hadoop-batch') {
+	description = 'Spring for Apache Hadoop Batch Features'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+		testRuntime "org.springframework.integration:spring-integration-file:$springIntVersion"
+	}
+
+}
+
+project('spring-data-hadoop-store') {
+	description = 'Spring for Apache Hadoop Store Features'
+
+	configurations {
+		testRuntime.exclude group: 'org.apache.hive'
+	}
+
+	dependencies {
+		compile project(":spring-data-hadoop-config")
+		compile "org.springframework:spring-messaging:$springVersion"
+		compile("org.kitesdk:kite-data-core:$kiteVersion") { dep ->
+			exclude group: "log4j", module: "log4j"
+		}
+		testCompile project(":spring-data-hadoop")
+		testCompile project(path:":spring-data-hadoop-test", configuration:"testArtifacts")
+		testCompile "org.springframework:spring-test:$springVersion"
+		testCompile("org.mockito:mockito-core:$mockitoVersion") { dep ->
+			exclude group: "org.hamcrest"
+		}
+		testCompile "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		testCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
+		testRuntime "org.xerial.snappy:snappy-java:1.1.0"
+	}
+
+}
+
+project('spring-data-hadoop-hbase') {
+	description = 'Spring for Apache Hadoop HBase Support'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+	}
+
+}
+
+project('spring-data-hadoop-hive') {
+	description = 'Spring for Apache Hadoop Hive Support'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+	}
+
+}
+
+project('spring-data-hadoop-pig') {
+	description = 'Spring for Apache Hadoop Pig Support'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+	}
+
+}
+
+project('spring-data-hadoop-spark') {
+	description = 'Spring for Apache Hadoop Spark Support'
+
+	// expose test classes so that dependant project
+	// may define it as dependency
+	configurations {
+		testArtifacts.extendsFrom testRuntime
+	}
+	artifacts {
+		testArtifacts testJar
+	}
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+		provided("org.apache.spark:spark-yarn_2.10:$sparkVersion")
+		runtime("org.apache.hadoop:hadoop-yarn-api:$hadoopVersion")
+		runtime("org.apache.hadoop:hadoop-yarn-client:$hadoopVersion")
+		runtime("org.apache.hadoop:hadoop-yarn-server-web-proxy:$hadoopVersion")
+		runtime("org.apache.hadoop:hadoop-client:$hadoopVersion")
+	}
+
+}
+
+project('spring-data-hadoop-sqoop2') {
+	description = 'Spring for Apache Hadoop Sqoop2 Support'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+		compile("org.apache.sqoop:sqoop-client:$sqoop2Version")
+	}
+
+}
+
+project('spring-data-hadoop-config') {
+	description = 'Spring for Apache Hadoop Annotation Configuration'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+	}
+
+}
+
+project('spring-data-hadoop') {
+	description = 'Spring for Apache Hadoop Namspace Configuration'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+        compile project(":spring-data-hadoop-hive")
+        compile project(":spring-data-hadoop-pig")
+        compile project(":spring-data-hadoop-batch")
+        compile project(":spring-data-hadoop-hbase")
+	}
+
+}
+
+project('spring-data-hadoop-boot') {
+	description = 'Spring for Apache Hadoop Boot'
+
+	dependencies {
+		compile project(":spring-data-hadoop-config")
+		compile "org.springframework.boot:spring-boot-autoconfigure:$springBootVersion"
+		optional "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion"
+		runtime "org.yaml:snakeyaml:$snakeYamlVersion"
+		testCompile "org.springframework:spring-test:$springVersion"
+		testCompile "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		testCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
+		testCompile "junit:junit:$junitVersion"
+	}
+	compileJava.dependsOn(processResources)
+}
+
+project('spring-data-hadoop-test') {
+	description = 'Spring for Apache Hadoop Tests Core'
+
+	// expose test classes so that dependant project
+	// may define it as dependency
+	configurations {
+		testCompile.exclude group: 'org.mockito'
+		testArtifacts.extendsFrom testRuntime
+	}
+	artifacts {
+		testArtifacts testJar
+	}
+
+	dependencies {
+        compile project(":spring-data-hadoop-core")
+		compile "org.springframework:spring-test:$springVersion"
+		compile "junit:junit:$junitVersion"
+		compile hadoopTestArtifacts
+	}
+}
+
+
+project('spring-data-hadoop-build-tests') {
+	description = 'Spring for Apache Hadoop Integration Tests'
+
+	dependencies {
+		compile project(":spring-data-hadoop-core")
+		compile project(":spring-data-hadoop-batch")
+		compile project(":spring-data-hadoop-config")
+		compile project(":spring-data-hadoop")
+		compile project(":spring-data-hadoop-test")
+		testCompile project(path:":spring-data-hadoop-test", configuration:"testArtifacts")
+		testCompile project(path:":spring-data-hadoop-spark")
+		testCompile project(path:":spring-data-hadoop-sqoop2")
+
+		// Testing
+		testCompile "junit:junit:$junitVersion"
+		testCompile("org.mockito:mockito-core:$mockitoVersion") { dep ->
+			exclude group: "org.hamcrest"
+		}
+		testCompile "org.springframework:spring-test:$springVersion"
+		testCompile("javax.annotation:jsr250-api:1.0")
+		testCompile "org.springframework.integration:spring-integration-stream:$springIntVersion"
+		testCompile "org.springframework.integration:spring-integration-file:$springIntVersion"
+		testRuntime "org.springframework.integration:spring-integration-event:$springIntVersion"
+
+		testRuntime "cglib:cglib-nodep:$cglibVersion"
+		testRuntime "commons-io:commons-io:$commonsioVersion"
+
+		// Testing
+		testRuntime "org.codehaus.groovy:groovy:$groovyVersion"
+		testRuntime "org.jruby:jruby:$jrubyVersion"
+		testRuntime "org.python:jython-standalone:$jythonVersion"
+	
+		// specify a version of antlr that works with both hive and pig
+		testRuntime "org.antlr:antlr-runtime:$antlrVersion"
+
+		// Spark dependency for Spark tests
+		testRuntime "org.apache.spark:spark-yarn_2.10:$sparkVersion"
+	}
+
+    task downloadGutenbergBooks {
+        ant.get(src: 'http://mirror.its.dal.ca/gutenberg/1/0/100/100.txt',
+                dest: 'src/test/resources/input/gutenberg',skipexisting:true)
+        ant.get(src: 'http://mirror.its.dal.ca/gutenberg/1/3/135/135.txt',
+                dest: 'src/test/resources/input/gutenberg',skipexisting:true)
+        ant.get(src: 'http://mirror.its.dal.ca/gutenberg/1/3/9/1399/1399.txt',
+                dest: 'src/test/resources/input/gutenberg',skipexisting:true)
+        ant.get(src: 'http://mirror.its.dal.ca/gutenberg/2/6/0/2600/2600.txt',
+                dest: 'src/test/resources/input/gutenberg',skipexisting:true)
+    }
+
+	task enablePigTests {
+		description = "Enabling Pig tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipPig = false
+		}
+	}
+
+	task enableHiveTests {
+		description = "Enabling Hive tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipHive = false
+		}
+	}
+
+	task enableHBaseTests {
+		description = "Enabling HBase tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipHBase = false
+		}
+	}
+
+	task enableWebHdfsTests {
+		description = "Enabling WebHdfs tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipWebHdfs = false
+		}
+	}
+
+	task enableSparkTests {
+		description = "Enabling Spark tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipSpark = false
+		}
+	}
+
+	task enableSqoop2Tests {
+		description = "Enabling Sqoop2 tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipSqoop2 = false
+		}
+	}
+
+	task enableAllTests() {
+		description = "Enabling all (incl. Pig, Hive, HBase, WebHdfs, Spark, Sqoop2) tests"
+		group = "Verification"
+		doLast() {
+			project.ext.skipPig = false
+			project.ext.skipHive = false
+			project.ext.skipHBase = false
+			project.ext.skipWebHdfs = false
+			project.ext.skipSpark = false
+			project.ext.skipSqoop2 = false
+		}
+	}
+
+	tasks.withType(Test).all {
+		if (project.hasProperty('test.forkEvery')) {
+			forkEvery = project.getProperty('test.forkEvery').toInteger()
+		}
+		systemProperties['input.path'] = 'build/classes/test/input'
+		systemProperties['output.path'] = 'build/classes/test/output'
+		includes = ["**/*.class"]
+
+		testLogging {
+			events "started"
+			minGranularity 2
+			maxGranularity 2
+		}
+
+		doFirst() {
+			ext.msg = " "
+
+			if (project.ext.skipPig) {
+				ext.msg += "Pig "
+				excludes.add("**/pig/**")
+			}
+			if (project.ext.skipHBase) {
+				ext.msg += "HBase "
+				excludes.add("**/hbase/**")
+			}
+	
+			if (project.ext.skipHive) {
+				ext.msg += "Hive "
+				excludes.add("**/hive/**")
+			}
+
+			if (project.ext.skipWebHdfs) {
+				ext.msg += "WebHdfs "
+				excludes.add("**/WebHdfs*")
+			}
+
+			if (project.ext.skipSpark) {
+				ext.msg += "Spark "
+				excludes.add("**/spark/**")
+			}
+
+			if (project.ext.skipSqoop2) {
+				ext.msg += "Sqoop2 "
+				excludes.add("**/sqoop2/**")
+			}
+
+			if (!msg.trim().isEmpty())
+					println "Skipping [$msg] Tests";
+	
+			// check prefix for hd.fs
+			// first copy the properties since we can't change them
+			ext.projProps = project.properties
+	
+			if (projProps.containsKey("hd.fs")) {
+					String hdfs = projProps["hd.fs"].toString()
+					if (!hdfs.contains("://")) {
+						projProps.put("hd.fs", "hdfs://" + hdfs)
+					}
+			}
+			
+			// due to GRADLE-2475, set the system properties manually
+			projProps.each { k,v ->
+					if (k.toString().startsWith("hd.")) {
+						systemProperties[k] = projProps[k]
+					}
+			}
+		}
+	}
+
+}
+
+project('spring-data-hadoop-cluster-tests') {
+	description = 'Spring for Apache Hadoop Cluster Tests'
+
+	dependencies {
+		compile project(":spring-data-hadoop")
+		compile project(":spring-data-hadoop-config")
+		compile project(":spring-data-hadoop-test")
+		testCompile project(path:":spring-data-hadoop-test", configuration:"testArtifacts")
+
+		// Testing
+		testCompile "junit:junit:$junitVersion"
+		testCompile "org.springframework:spring-test:$springVersion"
+	}
+
+	tasks.withType(Test).all {
+		if (project.hasProperty('test.forkEvery')) {
+			forkEvery = project.getProperty('test.forkEvery').toInteger()
+		}
+		systemProperties['input.path'] = 'build/classes/test/input'
+		systemProperties['output.path'] = 'build/classes/test/output'
+		includes = ["**/*.class"]
+
+		testLogging {
+			events "started"
+			minGranularity 2
+			maxGranularity 2
+		}
+
+	}
+
+}
+
+configure(yarnProjects()) {
+	task integrationTest(type: Test) {
+		include '**/*IntegrationTests.*'
+	}
+	tasks.withType(Test).all {
+		exclude '**/*IntegrationTests.*'
+	}
+	dependencies {
+		testCompile "org.springframework:spring-test:$springVersion"
+		testCompile "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		testCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
+		testCompile "junit:junit:$junitVersion"
+	}
+	clean.doLast {ant.delete(dir: "target")}
+}
+
+project('spring-yarn') {
+	description = 'Spring for Apache Hadoop YARN'
+	dependencies {
+		compile project("spring-yarn-batch")
+	}
+}
+
+project('spring-yarn:spring-yarn-core') {
+	description = 'Spring Yarn Core'
+	dependencies {
+		compile project(":spring-data-hadoop-config")
+		compile "org.springframework:spring-messaging:$springVersion"
+		compile "org.springframework.statemachine:spring-statemachine-core:$springStatemachineVersion"
+		compile("org.apache.hadoop:hadoop-yarn-client:$hadoopVersion") { dep ->
+			exclude group: "org.slf4j", module: "slf4j-log4j12"
+		}
+		compile("org.apache.hadoop:hadoop-common:$hadoopVersion") { dep ->
+			exclude group: "junit", module: "junit"
+		}
+		testCompile("org.mockito:mockito-core:$mockitoVersion") { dep ->
+			exclude group: "org.hamcrest"
+		}
+	}
+
+	tasks.withType(Test).all {
+
+		doFirst() {
+			// check prefix for hd.fs
+			// first copy the properties since we can't change them
+			ext.projProps = project.properties
+
+			if (projProps.containsKey("hd.fs")) {
+					String hdfs = projProps["hd.fs"].toString()
+					if (!hdfs.contains("://")) {
+						projProps.put("hd.fs", "hdfs://" + hdfs)
+					}
+			}
+		
+			// due to GRADLE-2475, set the system properties manually
+			projProps.each { k,v ->
+					if (k.toString().startsWith("hd.")) {
+						systemProperties[k] = projProps[k]
+					}
+					if (k.toString().equals("profiles")) {
+						systemProperties['spring.profiles.active'] = projProps[k]
+					}
+			}
+		}
+
+	}
+}
+
+project('spring-yarn:spring-yarn-integration') {
+	description = 'Spring Yarn Integration'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-core")
+		compile "org.springframework.integration:spring-integration-ip:$springIntVersion"
+		compile "com.fasterxml.jackson.core:jackson-core:$jackson2Version"
+		compile "com.fasterxml.jackson.core:jackson-databind:$jackson2Version"
+		testCompile "org.springframework.integration:spring-integration-test:$springIntVersion"
+	}
+}
+
+project('spring-yarn:spring-yarn-batch') {
+	description = 'Spring Yarn Batch'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-integration")
+		compile project(":spring-data-hadoop-store")
+		compile "org.springframework.batch:spring-batch-core:$springBatchVersion"
+		compile "org.springframework.batch:spring-batch-infrastructure:$springBatchVersion"
+		testCompile project(":spring-data-hadoop-core")
+		testCompile project(":spring-yarn:spring-yarn-test")
+	}
+}
+
+project('spring-yarn:spring-yarn-boot') {
+	description = 'Spring Yarn Boot'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-core")
+		provided project(":spring-yarn:spring-yarn-batch")
+		provided "org.springframework:spring-web:$springVersion"
+		provided "org.springframework:spring-webmvc:$springVersion"
+		compile "org.springframework.boot:spring-boot-autoconfigure:$springBootVersion"
+		compile "org.springframework.boot:spring-boot-actuator:$springBootVersion"
+		optional "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion"
+		compile "org.apache.httpcomponents:httpclient:$httpclientVersion"
+		optional "org.springframework.security:spring-security-config:$springSecurityVersion"
+		optional "org.springframework.security:spring-security-web:$springSecurityVersion"
+		runtime "org.yaml:snakeyaml:$snakeYamlVersion"
+		testRuntime "org.apache.tomcat.embed:tomcat-embed-core:$tomcatEmbedVersion"
+		testRuntime "org.apache.tomcat.embed:tomcat-embed-logging-juli:$tomcatEmbedVersion"
+		testCompile("org.mockito:mockito-core:$mockitoVersion") { dep ->
+			exclude group: "org.hamcrest"
+		}
+		testCompile "com.jayway.jsonpath:json-path:$jsonpathVersion"
+		testCompile "com.jayway.jsonpath:json-path-assert:$jsonpathVersion"
+	}
+	compileJava.dependsOn(processResources)
+}
+
+project('spring-yarn:spring-yarn-boot-cli') {
+	description = 'Spring Yarn Boot Cli'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-boot")
+		compile "org.springframework.boot:spring-boot-cli:$springBootVersion"
+		runtime "org.springframework:spring-web:$springVersion"
+	}
+}
+
+project('spring-yarn:spring-yarn-boot-build-tests') {
+
+	apply plugin: 'spring-boot'
+
+	description = 'Spring Yarn Boot Build Tests'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-boot")
+		testCompile project(":spring-yarn:spring-yarn-test")
+		testRuntime "org.springframework:spring-web:$springVersion"
+	}
+
+	// create a boot jar which we can use in tests
+	// disable main bootRepackage task so that it
+	// doesn't mess with main artifact
+	// test needs to depend on these tasks
+	task appmasterJar(type: Jar) {
+		archiveName = 'test-archive-appmaster.jar'
+		from sourceSets.test.output
+	}
+	task appmasterBootJar(type: BootRepackage, dependsOn: appmasterJar) {
+		withJarTask = appmasterJar
+		mainClass = 'org.springframework.yarn.boot.app.SpringYarnBootApplication'
+	}
+	bootRepackage.enabled = false
+	tasks.withType(Test).all { dependsOn(appmasterBootJar) }
+
+}
+
+project('spring-yarn:spring-yarn-test') {
+	description = 'Spring Yarn Test Core'
+	configurations {
+		hadoopruntime.exclude group: 'log4j'
+		hadoopruntime.exclude group: 'org.slf4j'
+		hadoopruntime.exclude group: 'org.apache.hadoop'
+		hadoopruntime.exclude group: 'commons-logging'
+		hadoopruntime.exclude group: 'org.codehaus.jettison'
+		hadoopruntime.exclude group: 'com.thoughtworks.xstream'
+		hadoopruntimenotest.exclude group: 'org.apache.hadoop', module: 'hadoop-yarn-server-tests'
+	}
+	dependencies {
+        compile project(":spring-yarn:spring-yarn-core")
+		compile "org.springframework:spring-test:$springVersion"
+		compile "junit:junit:$junitVersion"
+		compile("org.apache.hadoop:hadoop-yarn-client:$hadoopVersion") { dep ->
+			exclude group: "org.slf4j", module: "slf4j-log4j12"
+		}
+		compile("org.apache.hadoop:hadoop-common:$hadoopVersion") { dep ->
+			exclude group: "junit", module: "junit"
+		}
+		compile("org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion") { dep ->
+			exclude group: "org.slf4j", module: "slf4j-log4j12"
+		}
+		compile("org.apache.hadoop:hadoop-yarn-server-tests:$hadoopVersion:tests") { dep ->
+			exclude group: "org.slf4j", module: "slf4j-log4j12"
+		}
+		compile "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
+		compile("org.apache.hadoop:hadoop-hdfs:$hadoopVersion:tests") { dep ->
+			exclude group: "log4j", module: "log4j"
+		}
+		compile("org.apache.hadoop:hadoop-common:$hadoopVersion:tests") { dep ->
+			exclude group: "log4j", module: "log4j"
+			exclude group: "org.slf4j", module: "slf4j-log4j12"
+		}
+		hadoopruntime configurations.runtime
+		hadoopruntimenotest configurations.runtime
+	}
+	task copyHadoopRuntimeDeps(type: Copy) {
+		into "$buildDir/dependency-libs"
+		from configurations.hadoopruntime
+	}
+	task copyHadoopRuntimeDepsAll(type: Copy) {
+		into "$buildDir/dependency-all-libs"
+		from configurations.hadoopruntimenotest
+	}
+	tasks.withType(Test).all { dependsOn([copyHadoopRuntimeDeps,copyHadoopRuntimeDepsAll]) }
+}
+
+project('spring-yarn:spring-yarn-build-tests') {
+	description = 'Spring Yarn Integration Test'
+	configurations {
+		hadoopruntime.exclude group: 'log4j'
+		hadoopruntime.exclude group: 'org.slf4j'
+		hadoopruntime.exclude group: 'org.apache.hadoop'
+		hadoopruntime.exclude group: 'commons-logging'
+		hadoopruntime.exclude group: 'org.codehaus.jettison'
+		hadoopruntime.exclude group: 'com.thoughtworks.xstream'
+		hadoopruntimenotest.exclude group: 'org.apache.hadoop', module: 'hadoop-yarn-server-tests'
+	}
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-core")
+		compile project(":spring-yarn:spring-yarn-test")
+		hadoopruntime configurations.runtime
+		hadoopruntimenotest configurations.runtime
+	}
+	task copyHadoopRuntimeDeps(type: Copy) {
+		into "$buildDir/dependency-libs"
+		from configurations.hadoopruntime
+	}
+	task copyHadoopRuntimeDepsAll(type: Copy) {
+		into "$buildDir/dependency-all-libs"
+		from configurations.hadoopruntimenotest
+	}
+	tasks.withType(Test).all { dependsOn([copyHadoopRuntimeDeps,copyHadoopRuntimeDepsAll]) }
+}
+
+project('spring-yarn:spring-yarn-boot-test') {
+	description = 'Spring Yarn Boot Test'
+	dependencies {
+		compile project(":spring-yarn:spring-yarn-boot")
+		compile project(":spring-yarn:spring-yarn-test")
+	}
+}
+
+task wrapper(type: Wrapper) {
+	description = "Generates gradlew[.bat] scripts"
+	gradleVersion = "2.4"
+}
+

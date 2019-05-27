@@ -1,0 +1,64 @@
+rootProject.name = 'spring-data-hadoop'
+
+ext.hadoopDistro = hasProperty("distro") ? getProperty("distro") : "default"
+switch (ext.hadoopDistro) {
+	case "cdh3":
+		ext.mr2 = false
+		break    
+	case "cdh4yarn":
+		ext.mr2 = false
+		break    
+	case "cdh4":
+	case "cdh4mr1":
+		ext.mr2 = false
+		break    
+	case "cdh5":
+	case "cdh5yarn":
+		ext.mr2 = true 
+		break    
+	case "cdh5mr1":
+		ext.mr2 = false
+		break    
+	case "phd1":
+		ext.mr2 = false
+		break
+	case "phd20":
+		ext.mr2 = true
+		break
+	case "hdp13":
+		ext.mr2 = false
+		break
+	case "hdp20":
+		ext.mr2 = true
+		break
+	case "hdp21":
+		ext.mr2 = true
+		break
+	case "hadoop24":
+		ext.mr2 = true
+		break
+	case "hadoop12":
+		ext.mr2 = false
+		break
+	default:
+		ext.mr2 = true
+}
+
+gradle.ext.mr2 = mr2
+
+include 'spring-hadoop-core'
+rootProject.children.find{ it.name == 'spring-hadoop-core' }.name = 'spring-data-hadoop-core'
+include 'spring-hadoop-batch'
+rootProject.children.find{ it.name == 'spring-hadoop-batch' }.name = 'spring-data-hadoop-batch'
+include 'spring-hadoop-store'
+rootProject.children.find{ it.name == 'spring-hadoop-store' }.name = 'spring-data-hadoop-store'
+include 'spring-hadoop-config'
+rootProject.children.find{ it.name == 'spring-hadoop-config' }.name = 'spring-data-hadoop'
+include 'spring-hadoop-test'
+rootProject.children.find{ it.name == 'spring-hadoop-test' }.name = 'spring-data-hadoop-test'
+include 'spring-hadoop-build-tests'
+rootProject.children.find{ it.name == 'spring-hadoop-build-tests' }.name = 'spring-data-hadoop-build-tests'
+if (mr2) {
+  print "Based on selected distro (${hadoopDistro}) we are including spring-yarn\n"
+  include 'spring-yarn:spring-yarn-core','spring-yarn:spring-yarn-integration','spring-yarn:spring-yarn-batch','spring-yarn:spring-yarn-test','spring-yarn:spring-yarn-build-tests','spring-yarn:spring-yarn-boot','spring-yarn:spring-yarn-boot-test','spring-yarn:spring-yarn-boot-build-tests'
+}

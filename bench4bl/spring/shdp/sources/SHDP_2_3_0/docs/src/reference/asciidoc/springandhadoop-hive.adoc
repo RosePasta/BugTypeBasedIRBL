@@ -1,0 +1,128 @@
+[[springandhadoop-hive]]
+== Hive integration 
+
+Starting with Spring for Apache Hadoop 2.3 and Hive 1.0 support for HiveServer1 and the Hive Thrift 
+client have been dropped. You should instead use HiveServer2 and the JDBC driver for Hive.
+
+The SHDP programming model for HiveServer1 have been updated to use the JDBC driver instead of directly using the Thrift client. If you have existing code you will have to modify it if you use the `HiveClient` directly. If you use the `HiveTemplate` then you should be able to simply update your configuration files to use the JDBC driver.
+
+=== Starting a Hive Server
+
+The new HiveServer2 now supports multi-user access and is typically run in the Hadoop cluster. See the http://hive.apache.org[Hive Project] for details.
+
+=== Using the Hive JDBC Client
+
+We provide a dedicated namespace element for
+configuring a Hive client (that is Hive accessing a server node through
+JDBC). You also need a hiveDataSource using the JDBC driver for HiveServer2:
+
+[source,xml]
+----
+<!-- by default, the definition name is 'hiveClientFactory' -->
+<hive-client-factory id="hiveClientFactory" hive-data-source-ref="hiveDataSource"/>
+<beans:bean id="hiveDriver" class="org.apache.hive.jdbc.HiveDriver"/>
+<beans:bean id="hiveDataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+  <beans:constructor-arg name="driver" ref="hiveDriver"/>
+  <beans:constructor-arg name="url" value="jdbc:hive2://localhost:1000"/>
+</beans:bean>
+----
+
+=== Running a Hive script or query
+
+Like the rest of the Spring Hadoop components, a runner is provided out
+of the box for executing Hive scripts, either inlined or from various
+locations through `hive-runner` element:
+
+[source,xml]
+----
+<hdp:hive-runner id="hiveRunner" run-at-startup="true">
+   <hdp:script>
+     DROP TABLE IF EXITS testHiveBatchTable; 
+     CREATE TABLE testHiveBatchTable (key int, value string);
+   </hdp:script>
+   <hdp:script location="hive-scripts/script.q"/>
+</hdp:hive-runner>
+----
+
+The runner will trigger the execution during the application start-up
+(notice the `run-at-startup` flag which is by default `false`). Do note
+that the runner will not run unless triggered manually or if
+`run-at-startup` is set to `true`. Additionally the runner (as in fact
+do all <<springandhadoop-runners,runners>> in SHDP) allows one or multiple `pre` and
+`post` actions to be specified to be executed before and after each run.
+Typically other runners (such as other jobs or scripts) can be specified
+but any JDK `Callable` can be passed in. For more information on
+runners, see the <<springandhadoop-runners,dedicated>> chapter.
+
+==== Using the Hive tasklet
+
+For Spring Batch environments, SHDP provides a dedicated tasklet to
+execute Hive queries, on demand, as part of a batch or workflow. The
+declaration is pretty straightforward:
+
+[source,xml]
+----
+<hdp:hive-tasklet id="hive-script">
+   <hdp:script>
+     DROP TABLE IF EXITS testHiveBatchTable; 
+     CREATE TABLE testHiveBatchTable (key int, value string);
+   </hdp:script>
+   <hdp:script location="classpath:org/company/hive/script.q" />
+</hdp:hive-tasklet>
+----
+
+The tasklet above executes two scripts - one declared as part of the
+bean definition followed by another located on the classpath.
+
+=== Interacting with the Hive API
+
+For those that need to programmatically interact with the Hive API,
+Spring for Apache Hadoop provides a dedicated
+http://en.wikipedia.org/wiki/Template_method_pattern[template], similar
+to the aforementioned `JdbcTemplate`. The template handles the
+redundant, boiler-plate code, required for interacting with Hive such as
+creating a new `HiveClient`, executing the queries, catching any
+exceptions and performing clean-up. One can programmatically execute
+queries (and get the raw results or convert them to longs or ints) or
+scripts but also interact with the Hive API through the
+`HiveClientCallback`. For example:
+
+[source,xml]
+----
+<hdp:hive-client-factory ... />
+<!-- Hive template wires automatically to 'hiveClientFactory'-->
+<hdp:hive-template />
+    
+<!-- wire hive template into a bean -->
+<bean id="someBean" class="org.SomeClass" p:hive-template-ref="hiveTemplate"/>
+----
+
+[source,java]
+----
+public class SomeClass {
+
+  private HiveTemplate template;
+
+  public void setHiveTemplate(HiveTemplate template) { this.template = template; }
+
+  public List<String> getDbs() {
+      return hiveTemplate.execute(new HiveClientCallback<List<String>>() {
+         @Override
+         public List<String> doInHive(HiveClient hiveClient) throws Exception {
+            return hiveClient.get_all_databases();
+         }
+      }));
+  }
+}
+----
+
+The example above shows a basic container configuration wiring a
+`HiveTemplate` into a user class which uses it to interact with the
+`HiveClient` Thrift API. Notice that the user does not have to handle
+the lifecycle of the `HiveClient` instance or catch any exception (out
+of the many thrown by Hive itself and the Thrift fabric) - these are
+handled automatically by the template which converts them, like the rest
+of the Spring templates, into `DataAccessException`s. Thus the
+application only has to track only one exception hierarchy across all
+data technologies instead of one per technology.
+

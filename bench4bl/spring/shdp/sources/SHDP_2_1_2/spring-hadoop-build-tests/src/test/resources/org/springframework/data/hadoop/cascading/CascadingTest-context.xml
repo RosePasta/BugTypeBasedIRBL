@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:casc="http://www.springframework.org/schema/cascading"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd
+		http://www.springframework.org/schema/cascading http://www.springframework.org/schema/cascading/spring-cascading.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<import resource="../hadoop-ctx.xml"/>
+	
+	<hdp:script id="script" language="javascript" run-at-startup="true">
+if (fsh.test("/test/cascading/logs/")) fsh.rmr("/test/cascading/logs/")
+fsh.mkdir("/test/cascading/logs/test/")
+fsh.put("src/test/resources/logs/apache_access.log", "/test/cascading/logs/input");
+
+if (fsh.test("/test/cascading/names/")) fsh.rmr("/test/cascading/names/")
+fsh.mkdir("/test/cascading/names/test")
+fsh.put("src/test/resources/data/babynamedefinitions.csv.gz", "/test/cascading/names/input/babynamedefinitions.csv.gz");
+	</hdp:script>
+	
+	<!-- XML config -->
+	<import resource="cascade-import-ctx.xml"/>
+	<!-- code config -->
+	<bean class="org.springframework.data.hadoop.cascading.CascadingAnalysisConfig"/>
+
+	<bean id="cascade" class="org.springframework.data.hadoop.cascading.CascadeFactoryBean" p:configuration-ref="hadoopConfiguration">
+		<property name="flows">
+		<list>
+			<!-- import -->
+			<bean id="logparser" class="org.springframework.data.hadoop.cascading.HadoopFlowFactoryBean" p:configuration-ref="hadoopConfiguration">
+				<property name="source" ref="logTap" />
+				<property name="sink" ref="parsedTap" />
+				<property name="tail" ref="importPipe" />
+			</bean>
+			<!-- parse -->
+			<bean id="tCounter" class="org.springframework.data.hadoop.cascading.HadoopFlowFactoryBean" p:configuration-ref="hadoopConfiguration">
+				<property name="source" ref="parsedTap" />
+				<property name="sinks" ref="sinks" />
+				<property name="tails">
+					<list>
+						<ref bean="tsCountPipe"/>
+						<ref bean="tmCountPipe"/>
+					</list>
+				</property>
+			</bean>
+		</list>			
+		</property>
+	</bean>
+	
+	<bean id="cp-txt-files" class="org.springframework.data.hadoop.cascading.tap.local.ResourceTap">
+		<constructor-arg>
+			<bean class="cascading.scheme.local.TextLine"/>
+		</constructor-arg>
+		<constructor-arg>
+			<value>classpath:/data/*.txt</value>
+		</constructor-arg>
+	
+	</bean>
+
+	<casc:cascading-runner id="runner" unit-of-work-ref="cascade" run-at-startup="true" scope="singleton"/>
+	 
+	<!-- Java configuration -->
+	<bean id="copyFlowDef" class="org.springframework.data.hadoop.cascading.TestFlows" factory-method="copyFlow">
+		<constructor-arg name="sourcePath"><value>/test/cascading/names/input/babynamedefinitions.csv.gz</value></constructor-arg>
+		<constructor-arg name="sinkPath"><value>/test/cascading/names/output/simplepipe]]</value></constructor-arg>
+	</bean>
+	
+	<casc:cascading-flow id="copyFlow" definition-ref="copyFlowDef" />
+</beans>

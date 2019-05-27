@@ -1,0 +1,36 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+      	http://www.springframework.org/schema/batch	http://www.springframework.org/schema/batch/spring-batch.xsd
+      	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+      	http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+	<import resource="../hadoop-ctx.xml"/>
+	
+	<hdp:script id="script" language="javascript" run-at-startup="true">
+	if (fsh.test("/tmp/hbase/out")) { fsh.rmr("/tmp/hbase/out") }
+	if (fsh.test("/tmp/hbase/in")) { fsh.rmr("/tmp/hbase/in") }
+	
+	fsh.put("src/test/resources/input/word", "/tmp/hbase/in")			
+	</hdp:script>
+	
+	 
+	<hdp:hbase-configuration configuration-ref="hadoopConfiguration" zk-quorum="${hbase.host}">
+		head=bucket
+		someparam=anothervalue
+	</hdp:hbase-configuration>
+	 
+
+	<hdp:job id="hjob" configuration-ref="hbaseConfiguration"
+	  mapper="org.springframework.data.hadoop.hbase.Mapper"
+	  reducer="org.springframework.data.hadoop.hbase.Reducer"
+	  jar="hbase-mini-mr.jar"
+	  input-path="/tmp/hbase/in"
+	  output-path="/tmp/hbase/out"/>
+	
+</beans>

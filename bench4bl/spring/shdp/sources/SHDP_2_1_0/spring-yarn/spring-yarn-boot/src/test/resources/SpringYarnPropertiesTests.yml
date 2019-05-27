@@ -1,0 +1,10 @@
+spring:
+    yarn:
+        appName: appNameFoo
+        appType: appTypeFoo
+        stagingDir: stagingDirFoo
+        applicationDir: applicationDirFoo
+        applicationBaseDir: applicationBaseDirFoo
+        applicationVersion: applicationVersionFoo
+        siteYarnAppClasspath: siteYarnAppClasspathFoo
+        siteMapreduceAppClasspath: siteMapreduceAppClasspathFoo

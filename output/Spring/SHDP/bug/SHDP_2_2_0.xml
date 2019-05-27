@@ -1,0 +1,35 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+<bug id="510" opendate="2015-07-17 08:28:47" fixdate="2015-07-17 09:01:24" resolution="Complete">
+<buginformation>
+<summary>Append reopen may fail</summary>
+<description>With hadoop 2.7.1 TextFileStoreAppendTests.testWriteAppendReopen fails with:       org.apache.hadoop.fs.ChecksumException: Checksum error: /tmp/TextFileStoreAppendTests/default at 0 exp: 1355388271 got: 272615628     	at org.apache.hadoop.util.DataChecksum.verifyChunkedSums(DataChecksum.java:325)     	at org.apache.hadoop.hdfs.RemoteBlockReader2.readNextPacket(RemoteBlockReader2.java:231)     	at org.apache.hadoop.hdfs.RemoteBlockReader2.read(RemoteBlockReader2.java:152)     	at org.apache.hadoop.hdfs.DFSInputStream$ByteArrayStrategy.doRead(DFSInputStream.java:737)     	at org.apache.hadoop.hdfs.DFSInputStream.readBuffer(DFSInputStream.java:793)     	at org.apache.hadoop.hdfs.DFSInputStream.readWithStrategy(DFSInputStream.java:853)     	at org.apache.hadoop.hdfs.DFSInputStream.read(DFSInputStream.java:896)     	at java.io.DataInputStream.read(DataInputStream.java:100)     	at org.apache.hadoop.util.LineReader.fillBuffer(LineReader.java:180)     	at org.apache.hadoop.util.LineReader.readDefaultLine(LineReader.java:216)     	at org.apache.hadoop.util.LineReader.readLine(LineReader.java:174)     	at org.apache.hadoop.util.LineReader.readLine(LineReader.java:370)     	at org.springframework.data.hadoop.store.input.TextFileReader$1.doRead(TextFileReader.java:110)       It looks like closing a second append writer before read fixes this error. </description>
+<version>2.2.0.GA</version>
+<fixedVersion>2.3.0.M1</fixedVersion>
+<type>TB</type>
+</buginformation>
+<links>
+<link type="Relate" description="relates to">536</link>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.data.hadoop.store.TextFileStoreAppendTests.java">
+<method>testWriteAppendReopen()</method>
+</file>
+</fixedFiles>
+</bug>
+<bug id="515" opendate="2015-08-11 10:31:45" fixdate="2015-08-13 05:29:26" resolution="Complete">
+<buginformation>
+<summary>Support dots in yarn container group names</summary>
+<description>If we have a group name `foo.jee`, request for `/yarn_containercluster/foo.jee` fails because on default Spring MVC bindings will remove `.jee` assuming it is a file delimiter.</description>
+<version>2.2.0.GA</version>
+<fixedVersion>2.3.0 M2</fixedVersion>
+<type>PB-TF</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpoint.java">
+</file>
+</fixedFiles>
+</bug>
+</bugrepository>

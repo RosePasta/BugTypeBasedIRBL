@@ -1,0 +1,472 @@
+buildscript {
+    repositories {
+        maven { url 'http://repo.springsource.org/plugins-release' }
+    }
+    dependencies {
+        classpath 'org.springframework.build.gradle:docbook-reference-plugin:0.2.4'
+        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.3'
+    }
+}
+
+description = 'Spring for Apache Hadoop'
+group = 'org.springframework.data'
+
+repositories {
+  maven { url "http://repo.springsource.org/libs-snapshot" }
+}
+
+apply plugin: "java"
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply from: "$rootDir/maven.gradle"
+apply plugin: 'docbook-reference'
+apply plugin: 'propdeps'
+apply plugin: 'propdeps-idea'
+apply plugin: 'propdeps-eclipse'
+
+// 
+//  Select the Hadoop distribution used for building the binaries
+// 
+def List hadoop = []
+
+def hadoopDistro = project.hasProperty("distro") ? project.getProperty("distro") : "hadoop10"
+def hadoopVersion = hadoop10Version
+
+// handle older Hive version
+def hiveGroup = "org.apache.hive"
+
+// default is Hadoop 1.0.x
+switch (hadoopDistro) {
+
+  // Cloudera CDH3
+  case "cdh3":
+    hadoopVersion = cdh3Version
+    println "Using Cloudera CDH3 [$hadoopVersion]"
+    
+    dependencies {
+        optional("org.apache.hadoop:hadoop-streaming:$hadoopVersion") 
+        optional("org.apache.hadoop:hadoop-tools:$hadoopVersion")
+    }
+    
+    hbaseVersion = cdh3HbaseVersion
+    // Hive in CDH3 is too old and does not allow Hive Server to be compiled
+    // Note that the POMs and repo are incomplete (hive-builtin is missing)
+    // hiveVersion = cdh3HiveVersion
+    // hiveGroup = "org.apache.hadoop.hive"
+    pigVersion = cdh3PigVersion
+
+  break;    
+
+  // Cloudera CDH4
+  case "cdh4":
+    hadoopVersion = cdh4MR1Version
+    println "Using Cloudera CDH4 [$hadoopVersion]"
+
+    dependencies {
+        optional("org.apache.hadoop:hadoop-streaming:$cdh4MR1Version") 
+        optional("org.apache.hadoop:hadoop-tools:$cdh4MR1Version")
+        optional("org.apache.hadoop:hadoop-common:$cdh4Version")
+        optional("org.apache.hadoop:hadoop-hdfs:$cdh4Version")
+    }
+
+    hbaseVersion = cdh4HbaseVersion
+    hiveVersion = cdh4HiveVersion
+    pigVersion = cdh4PigVersion
+    thriftVersion = cdh4ThriftVersion
+
+  break;    
+
+  // Hadoop 1.1.x
+  case "hadoop11":
+    hadoopVersion = hadoop11Version
+    
+    println "Using Apache Hadoop 1.1.x [$hadoopVersion]"
+    
+    hadoop = ["org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+              "org.apache.hadoop:hadoop-tools:$hadoopVersion"]
+  break;
+
+  default:
+    println "Using Apache Hadoop 1.0.x [$hadoopVersion]"
+    hadoopVersion = hadoop10Version
+    hadoop = ["org.apache.hadoop:hadoop-streaming:$hadoopVersion",
+              "org.apache.hadoop:hadoop-tools:$hadoopVersion"]
+}
+// Common dependencies
+dependencies {
+    compile hadoop
+
+    // Logging - using commons-logging from spring-core
+    testRuntime("log4j:log4j:$log4jVersion")
+
+    // Spring Framework
+    // context-support -> spring-aop/beans/core -> commons-logging
+    compile "org.springframework:spring-context-support:$springVersion"
+    // used for DAO exceptions by Pig/HBase/Hive packages
+    optional("org.springframework:spring-tx:$springVersion")
+    // used by Hive package
+    optional("org.springframework:spring-jdbc:$springVersion")
+    // tasklet integration
+    optional("org.springframework.batch:spring-batch-core:$springBatchVersion")
+    // Cascading local Taps
+    optional("org.springframework.integration:spring-integration-core:$springIntVersion")
+
+    // cascading
+    optional("cascading:cascading-hadoop:$cascadingVersion") { dep ->
+        exclude module: "hadoop-core"
+    }
+    
+    // Missing dependency in Hadoop 1.0.3
+    testRuntime "commons-io:commons-io:$commonsioVersion"
+    testRuntime "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
+    testRuntime "cglib:cglib:$cglibVersion"
+
+    // Hive
+    optional("$hiveGroup:hive-service:$hiveVersion")
+    
+    // needed by JDBC test
+    testRuntime "$hiveGroup:hive-jdbc:$hiveVersion"
+    
+    // needed by the Hive Server tests
+    // testRuntime "$hiveGroup:hive-builtins:$hiveVersion" 
+    // testRuntime("$hiveGroup:hive-metastore:$hiveVersion") 
+
+    //testRuntime "$hiveGroup:hive-common:$hiveVersion"
+    //testRuntime "$hiveGroup:hive-shims:$hiveVersion"
+    //testRuntime "$hiveGroup:hive-serde:$hiveVersion"
+    //testRuntime "org.apache.thrift:libthrift:$thriftVersion"
+    //testRuntime "org.apache.thrift:libfb303:$thriftVersion"
+
+    // Pig
+    optional("org.apache.pig:pig:$pigVersion")
+    
+    // HBase
+    optional("org.apache.hbase:hbase:$hbaseVersion") { dep ->
+        exclude module: "thrift"
+    }
+
+    // Libs dependencies (specified to cope with incompatibilities between them)
+    // testRuntime "org.antlr:antlr:$antlrVersion"
+    // testRuntime "org.antlr:antlr-runtime:$antlrVersion"
+
+    
+    // Testing
+    testCompile "junit:junit:$junitVersion"
+    testCompile "org.mockito:mockito-core:$mockitoVersion"
+    testCompile "org.springframework:spring-test:$springVersion"
+    testCompile("javax.annotation:jsr250-api:1.0")
+    testCompile "org.apache.hadoop:hadoop-examples:$hadoopVersion"
+    testCompile "org.springframework.integration:spring-integration-stream:$springIntVersion"
+    testCompile "org.springframework.integration:spring-integration-file:$springIntVersion"
+
+    testRuntime "org.springframework.integration:spring-integration-event:$springIntVersion"
+    
+    testRuntime "org.codehaus.groovy:groovy:$groovyVersion"
+    testRuntime "org.jruby:jruby:$jrubyVersion"
+    testRuntime "org.python:jython-standalone:$jythonVersion"
+    
+    // specify a version of antlr that works with both hive and pig (works only during compilation)
+    testRuntime "org.antlr:antlr-runtime:$antlrVersion"
+    testCompile "cascading:cascading-local:$cascadingVersion"
+}
+
+// exclude poms from the classpath (pulled in by Cloudera)
+eclipse.classpath.file {
+    whenMerged { classpath ->
+        classpath.entries.removeAll { entry -> entry.toString().contains(".pom") }
+    }
+}
+
+sourceCompatibility = 1.6
+targetCompatibility = 1.6 
+
+ext.skipPig = true
+ext.skipHive = true
+ext.skipHBase = true
+ext.skipWebHdfs = true
+
+task enablePigTests {
+    description = "Enable Pig tests"
+    group = "Verification"
+    
+    doLast() {
+        project.ext.skipPig = false
+   }
+}
+
+task enableHiveTests {
+    description = "Enable Hive tests"
+    group = "Verification"
+    doLast() {
+        project.ext.skipHive = false
+   }
+}
+
+task enableHBaseTests {
+    description = "Enable HBase tests"
+    group = "Verification"
+    doLast() {
+        project.ext.skipHBase = false
+    }
+}
+
+task enableWebHdfsTests {
+    description = "Enable WebHdfs tests"
+    group = "Verification"
+    doLast() {
+        project.ext.skipWebHdfs = false
+    }
+}
+
+task enableAllTests() {
+    description = "Enable all (incl. Pig, Hive, HBase, WebHdfs) tests"
+    group = "Verification"
+    doFirst() {
+      println "Enable all tests"
+      project.ext.skipPig = false
+      project.ext.skipHBase = false
+      project.ext.skipHive = false
+      project.ext.skipWebHdfs = false
+    }
+}
+
+test {
+    //forkEvery = 1
+    systemProperties['input.path'] = 'build/classes/test/input'
+    systemProperties['output.path'] = 'build/classes/test/output'
+    includes = ["**/*.class"]
+
+    testLogging {
+        events "started"
+        minGranularity 2
+        maxGranularity 2
+    }
+
+    doFirst() {
+        ext.msg = ""
+        
+        if (skipPig) {
+            ext.msg += "Pig "
+            excludes.add("**/pig/**")
+        }
+        if (skipHBase) {
+            ext.msg += "HBase "
+            excludes.add("**/hbase/**")
+        }
+        
+        if (skipHive) {
+            ext.msg += "Hive "
+            excludes.add("**/hive/**")
+        }
+
+        if (skipWebHdfs) {
+            ext.msg += "WebHdfs"
+            excludes.add("**/WebHdfs*")
+        }
+        
+        if (!msg.isEmpty())
+            println "Skipping [$msg] Tests";
+        
+        // check prefix for hd.fs
+        // first copy the properties since we can't change them
+        ext.projProps = project.properties
+        
+        if (projProps.containsKey("hd.fs")) {
+            String hdfs = projProps["hd.fs"].toString()
+            if (!hdfs.contains("://")) {
+                projProps.put("hd.fs", "hdfs://" + hdfs)
+            }
+        }
+            
+        // due to GRADLE-2475, set the system properties manually
+        projProps.each { k,v ->
+             if (k.toString().startsWith("hd.")) {
+                systemProperties[k] = projProps[k]
+             }
+        }
+    }
+}
+
+javadoc {
+  ext.srcDir = file("${projectDir}/docs/src/api")
+  
+  configure(options) {
+      stylesheetFile = file("${srcDir}/spring-javadoc.css")
+      overview = "${srcDir}/overview.html"
+      docFilesSubDirs = true
+      outputLevel = org.gradle.external.javadoc.JavadocOutputLevel.QUIET
+      breakIterator = true
+      author = true
+      showFromProtected()
+      
+//      groups = [
+//        'Spring Data Hadoop' : ['org.springframework.data.hadoop*'],
+//      ]
+  
+     links = [
+        "http://static.springframework.org/spring/docs/3.0.x/javadoc-api",
+        "http://download.oracle.com/javase/6/docs/api",
+        "http://commons.apache.org/proper/commons-logging/commons-logging-1.1.1/apidocs/",
+		"http://logging.apache.org/log4j/1.2/apidocs/",
+        "http://hadoop.apache.org/common/docs/current/api/",
+        "http://hbase.apache.org/apidocs/",
+        "http://pig.apache.org/docs/r0.10.0/api/",
+        "http://hive.apache.org/docs/r0.7.1/api/",
+        "http://static.springsource.org/spring-batch/apidocs/",
+        "http://static.springsource.org/spring-integration/api/",
+        "https://builds.apache.org/job/Thrift/javadoc/",
+        "http://docs.cascading.org/cascading/2.1/javadoc/"
+     ]
+     
+     exclude "org/springframework/data/hadoop/config/**"
+  }
+    
+  title = "${rootProject.description} ${version} API"
+}
+
+jar {
+    manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
+    manifest.attributes['Implementation-Title'] = 'spring-data-hadoop'
+    manifest.attributes['Implementation-Version'] = project.version
+    manifest.attributes['Implementation-URL'] = "http://www.springsource.org/spring-data/hadoop"
+    manifest.attributes['Implementation-Vendor'] = "SpringSource"
+    manifest.attributes['Implementation-Vendor-Id'] = "org.springframework"
+    
+    def build = System.env['SHDP.BUILD']
+    if (build != null)
+        manifest.attributes['Build'] = build
+    
+    String rev = "unknown"
+    
+    // parse the git files to find out the revision
+    File gitHead = file('.git/HEAD')
+    if (gitHead.exists()) {
+        gitHead = file('.git/' + gitHead.text.trim().replace('ref: ',''))
+        if (gitHead.exists()) { rev = gitHead.text }
+    }
+
+    from("$rootDir/docs/src/info") {
+        include "license.txt"
+        include "notice.txt"
+        into "META-INF"
+        expand(copyright: new Date().format('yyyy'), version: project.version)
+    }
+
+    manifest.attributes['Repository-Revision'] = rev
+}
+
+task sourcesJar(type: Jar, dependsOn:classes) {
+    classifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+reference {
+    sourceDir = file('docs/src/reference/docbook')
+    //pdfFileName = 'spring-data-hadoop-reference.pdf'
+}
+
+
+task docsZip(type: Zip) {
+    group = 'Distribution'
+    classifier = 'docs'
+    description = "Builds -${classifier} archive containing api and reference for deployment"
+
+    from('docs/src/info') {
+        include 'changelog.txt'
+    }
+
+    from (javadoc) {
+        into 'api'
+    }
+
+    from (reference) {
+        into 'reference'
+    }
+}
+
+task schemaZip(type: Zip) {
+    group = 'Distribution'
+    classifier = 'schema'
+    description = "Builds -${classifier} archive containing all XSDs for deployment"
+
+    def Properties schemas = new Properties();
+    
+    sourceSets.main.resources.find {
+        it.path.endsWith('META-INF' + File.separator + 'spring.schemas')
+    }?.withInputStream { schemas.load(it) }
+
+    for (def key : schemas.keySet()) {
+        def shortName = key.replaceAll(/http.*schema.(.*).spring-.*/, '$1')
+        def alias = key.replaceAll(/http.*schema.(.*).(spring-.*)/, '$2')
+        assert shortName != key
+        File xsdFile = sourceSets.main.resources.find {
+            it.path.replace('\\', '/').endsWith(schemas.get(key))
+        }
+        assert xsdFile != null
+        
+        into (shortName) {
+           from xsdFile.path
+           rename { String fileName -> alias }
+        }
+    }    
+}
+
+task distZip(type: Zip, dependsOn: [jar, docsZip, schemaZip, sourcesJar, javadocJar]) {
+    group = 'Distribution'
+    classifier = 'dist'
+    description = "Builds -${classifier} archive, containing all jars and docs, " +
+                  "suitable for community download page."
+
+    ext.zipRootDir = "${project.name}-${project.version}"
+
+    into (zipRootDir) {
+        from('docs/src/info') {
+            include 'readme.txt'
+            include 'license.txt'
+            include 'notice.txt'
+            expand(copyright: new Date().format('yyyy'), version: project.version)
+        }
+
+        from('samples/') {
+                into 'samples'
+                exclude '**/build/**'
+                exclude '**/bin/**'
+                exclude '**/.settings/**'
+                exclude '**/.gradle/**'
+                exclude '**/.*'
+        }
+        
+        from(zipTree(docsZip.archivePath)) {
+            into "docs"
+        }
+
+        from(zipTree(schemaZip.archivePath)) {
+            into "schema"
+        }
+        into ("dist") {
+            from rootProject.collect { project -> project.libsDir }
+        }
+    }
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+
+    archives docsZip
+    archives schemaZip
+    archives distZip
+}
+
+task wrapper(type: Wrapper) {
+    description = 'Generates gradlew[.bat] scripts'
+    gradleVersion = '1.3'
+}
+
+assemble.dependsOn = ['jar', 'sourcesJar']
+defaultTasks 'build'

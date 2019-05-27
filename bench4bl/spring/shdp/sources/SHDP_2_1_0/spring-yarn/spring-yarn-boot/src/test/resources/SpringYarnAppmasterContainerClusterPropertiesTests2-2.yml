@@ -1,0 +1,10 @@
+spring:
+    yarn:
+        appmaster:
+            containercluster:
+                clusters:
+                    cluster2:
+                        projection:
+                            type: default
+                            data:
+                                any: 2

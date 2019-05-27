@@ -1,0 +1,45 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:hdp="http://www.springframework.org/schema/hadoop"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+      	http://www.springframework.org/schema/batch	http://www.springframework.org/schema/batch/spring-batch-2.1.xsd
+      	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+      	http://www.springframework.org/schema/hadoop http://www.springframework.org/schema/hadoop/spring-hadoop.xsd">
+
+	<import resource="../hadoop-ctx.xml"/>
+	 
+	<!-- 
+			mapred.job.tracker=${mapred.job.tracker}
+			# this is a comment
+			fs.default.name=${hd.fs}
+			# put the db inside the build so it can be ignored and cleaned between runs
+			hive.metastore.metadb.dir=.${file.separator}build
+			hive.metastore.warehouse.dir=.${file.separator}build
+			]]>
+	<bean id="hive-server" class="org.springframework.data.hadoop.hive.HiveServerFactoryBean" p:port="${hive.port}" p:configuration-ref="hadoop-configuration"/>
+
+	<hdp:hive-server properties-ref="props" properties-location="cfg-1.properties, cfg-2.properties" port="${hive.port}" configuration-ref="hadoop-configuration">
+		star=chasing
+		return=captain eo
+		train=last
+	</hdp:hive-server>
+ 	-->
+	
+	<util:properties id="props" location="props.properties"/>
+	
+	<hdp:hive-client host="${hive.host}" port="${hive.port}"/>
+
+	<bean id="hive-driver" class="org.apache.hadoop.hive.jdbc.HiveDriver"/>
+	<bean id="hive-ds" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+		<constructor-arg name="driver" ref="hive-driver"/>
+		<constructor-arg name="url" value="${hive.url}"/>
+	</bean>
+	
+	<bean id="template" class="org.springframework.jdbc.core.JdbcTemplate">
+		<constructor-arg ref="hive-ds"/>
+	</bean>		
+	
+</beans>

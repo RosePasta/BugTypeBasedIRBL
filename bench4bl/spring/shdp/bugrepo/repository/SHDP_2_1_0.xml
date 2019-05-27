@@ -1,0 +1,297 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+	<bug id="430" opendate="2014-11-15 01:49:04" fixdate="2014-11-15 02:23:14" resolution="Complete">
+		<buginformation>
+			<summary>YarnContainerClusterMvcEndpoint registered twice</summary>
+			<description>It looks like we get YarnContainerClusterMvcEndpoint under `/yarn_containercluster` and `/yarn_containercluster/yarn_containercluster`. I think this is caused by @RequestMapping which I believe is not needed anymore in boot mvc endpoints and now causes this double.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpointTests.java</file>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterMvcEndpoint.java</file>
+			<file type="M">org.springframework.yarn.boot.actuate.endpoint.mvc.YarnContainerClusterWithCustomProjectionsMvcEndpointTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="427" opendate="2014-11-14 06:25:56" fixdate="2014-11-20 08:04:09" resolution="Complete">
+		<buginformation>
+			<summary>DefaultPartitionStrategy doesn&amp;apos;t use spel compiler</summary>
+			<description>We made spel compiler enhancements to MessagePartitionStrategy which only exist in tests but is copied over to XD. Need to do same tweaks for DefaultPartitionStrategy which is map based.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.expression.MapExpressionMethods.java</file>
+			<file type="M">org.springframework.data.hadoop.store.partition.DefaultPartitionStrategy.java</file>
+			<file type="D">org.springframework.data.hadoop.store.partition.PartitionPerfTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="436" opendate="2014-11-23 14:19:54" fixdate="2014-12-02 02:21:05" resolution="Complete">
+		<buginformation>
+			<summary>PartitionTextFileWriter may leave in-use prefix/suffix behind</summary>
+			<description>It looks like that when PartitionTextFileWriter is used with an idleTimeout and we have a lot of concurrency and context/jvm is killed, running task to close/rename file(when in-use prefix/suffix is used) gets killed and we either lose data or file ends up having in-use prefix/suffix.
+This is caused by at least because of two things we don&amp;amp;apos;t do, 1) in AbstractPartitionDataStoreWriter.doStop() we don&amp;amp;apos;t call sub writes stop(), 2) in PollingTaskSupport.stop() we don&amp;amp;apos;t wait underlying runningTask to finish.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractPartitionDataStoreWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.StoreObjectSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.ContextCloseWriterTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.PollingTaskSupport.java</file>
+			<file type="M">org.springframework.data.hadoop.store.TestUtils.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="447" opendate="2014-12-05 02:52:30" fixdate="2014-12-05 03:03:10" resolution="Complete">
+		<buginformation>
+			<summary>PartitionTextFileWriter doesn&amp;apos;t stop TextFileWriter</summary>
+			<description>In `PartitionTextFileWriter.createWriter(Configuration, Path, CodecInfo)` we create anonymous TextFileWriter to override its `close()` method order to clear writers away from AbstractPartitionDataStoreWriter. However we don&amp;amp;apos;t shutdown `TextFileWriter` and thus its idle timeout task is kept running which later is causing trouble to clear correct writers away from partition writer.</description>
+			<version>2.1.0.M2</version>
+			<fixedVersion>2.1.0.M3</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriterSmokeTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.PartitionTextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+			<file type="M">org.springframework.data.hadoop.store.support.OutputStoreObjectSupport.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="460" opendate="2015-01-08 02:01:43" fixdate="2015-01-11 08:15:12" resolution="Complete">
+		<buginformation>
+			<summary>Fix typo in YarnPushCommand</summary>
+			<description>YarnPushCommand prints wrong info.
+
+
+
+
+
+
+handleOutput("New instance submitted");
+
+
+
+
+
+
+should be something like `New application pushed".</description>
+			<version>2.1.0.M3</version>
+			<fixedVersion>2.1.0 RC1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.cli.YarnPushCommand.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="469" opendate="2015-01-25 02:15:32" fixdate="2015-01-25 08:42:44" resolution="Complete">
+		<buginformation>
+			<summary>DefaultYarnContainer should not exit without @YarnComponent</summary>
+			<description>DefaultYarnContainer is a default when run/configured via boot and is really expected to be used together with one or more @YarnComponent. Possible method return values are then used to send event which ContainerLauncherRunner catches and does a real context/app exit. However if no @YarnComponent methods are used, thus not results, container exists immediately which something we don&amp;amp;apos;t want or something user expects.
+We should simple disable container end state processing if there are no @YarnComponent and thus there are no results. This is better expected functionality especially if container simply fires up rest methods and want to stay running. Order to exit gracefully from container user can still add @YarnComponent method and either sleep there or return Future and set return value later using a Future handle.</description>
+			<version>2.1.0 RC1</version>
+			<fixedVersion>2.1.0.GA</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.container.DefaultYarnContainerTests.java</file>
+			<file type="M">org.springframework.yarn.container.DefaultYarnContainer.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="482" opendate="2015-03-06 00:28:47" fixdate="2015-03-09 02:30:47" resolution="Complete">
+		<buginformation>
+			<summary>TextFileWriter unable to continue after close errors</summary>
+			<description>If we have a TextFileWriter with naming rollover and other normal settings we get into trouble if datanode dies or is restarted. </description>
+			<version>2.1.0.GA</version>
+			<fixedVersion>2.0.5, 2.1.1, 2.2.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.TextFileWriter.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">2774</link>
+		</links>
+	</bug>
+	<bug id="476" opendate="2015-02-04 00:39:18" fixdate="2015-03-09 04:45:19" resolution="Complete">
+		<buginformation>
+			<summary>Annotation config doesn&amp;apos;t always use beans</summary>
+			<description>AbstractImportingAnnotationConfiguration is used to hook adapter model in cases where bean definition is created manually using an import selector. Looks like build command to processing framework happens too early and @Bean methods inside @Configuration are not yet created.
+i.e. in below example @Bean &amp;amp;apos;partitionStrategy&amp;amp;apos; ended up to be a different instance that the one returned by a to partitionStrategy() from a configure method.
+
+
+
+
+
+
+@Configuration
+
+
+
+
+@EnableDataStorePartitionTextWriter(name=WRITER5_ID)
+
+
+
+
+static class Config5 extends SpringDataStoreTextWriterConfigurerAdapter {
+
+
+
+
+
+
+
+
+
+	@Override
+
+
+
+
+	public void configure(DataStoreTextWriterConfigurer config) throws Exception {
+
+
+
+
+		config
+
+
+
+
+			.basePath("/tmp/foo4")
+
+
+
+
+			.withPartitionStrategy()
+
+
+
+
+				.custom(partitionStrategy());
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+	@Bean
+
+
+
+
+	public PartitionStrategy&amp;lt;String, String&amp;gt; partitionStrategy() {
+
+
+
+
+		return new PartitionStrategy&amp;lt;String, String&amp;gt;() {
+
+
+
+
+
+
+
+
+
+			@Override
+
+
+
+
+			public PartitionResolver&amp;lt;String&amp;gt; getPartitionResolver() {
+
+
+
+
+				return null;
+
+
+
+
+			}
+
+
+
+
+
+
+
+
+
+			@Override
+
+
+
+
+			public PartitionKeyResolver&amp;lt;String, String&amp;gt; getPartitionKeyResolver() {
+
+
+
+
+				return null;
+
+
+
+
+			}
+
+
+
+
+		};
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+</description>
+			<version>2.1.0.GA</version>
+			<fixedVersion>2.1.1, 2.2.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.config.common.annotation.AbstractImportingAnnotationConfiguration.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultRolloverStrategyConfigurer.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.builders.DataStoreTextWriterBuilder.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.SpringTextWriterConfigurationTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.SpringDataStoreWriterConfigs.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultNamingStrategyConfigurer.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configuration.SpringDataStoreTextWriterConfiguration.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.builders.SpringDataStoreTextWriterBuilder.java</file>
+			<file type="M">org.springframework.data.hadoop.store.config.annotation.configurers.DefaultPartitionStrategyConfigurer.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">438</link>
+		</links>
+	</bug>
+</bugrepository>

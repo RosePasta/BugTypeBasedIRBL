@@ -1,0 +1,119 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+	<bug id="381" opendate="2014-08-13 00:47:43" fixdate="2014-08-13 01:06:43" resolution="Complete">
+		<buginformation>
+			<summary>Boot should support launch context args as list</summary>
+			<description>As of now we can&amp;amp;apos;t define container arguments as list because &amp;amp;apos;launchcontext.arguments&amp;amp;apos; is a map. Introduce new key &amp;amp;apos;launchcontext.argumentsList&amp;amp;apos; which takes a simple list values which keeps the order if that in necessary.</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnAppmasterLaunchContextPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.launch.LaunchCommandsFactoryBean.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.AbstractLaunchContextProperties.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnClientAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.YarnAppmasterAutoConfiguration.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnClientLaunchContextPropertiesTests.java</file>
+			<file type="M">org.springframework.yarn.boot.properties.SpringYarnAppmasterContainerClusterPropertiesTests.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="390" opendate="2014-08-28 09:56:01" fixdate="2014-08-29 00:01:03" resolution="Complete">
+		<buginformation>
+			<summary>Remote batch step exit code not updated</summary>
+			<description>When remote batch steps are executed on yarn containers, exit_code field is not updated in a database. As shown below exit_code is left to &amp;amp;apos;executing&amp;amp;apos; when is should &amp;amp;apos;completed&amp;amp;apos; or something else depending if step failed.
+
+
+
+
+
+
+STEP_EXECUTION_ID  STEP_NAME               STATUS     EXIT_CODE
+
+
+
+
+-----------------  ----------------------  ---------  ---------
+
+
+
+
+                0  master1                 COMPLETED  COMPLETED
+
+
+
+
+                1  remoteStep1:partition1  COMPLETED  EXECUTING
+
+
+
+
+                2  remoteStep1:partition0  COMPLETED  EXECUTING
+
+
+
+
+                3  master2                 FAILED     FAILED
+
+
+
+
+                4  remoteStep2:partition1  FAILED     EXECUTING
+
+
+
+
+                5  remoteStep2:partition0  FAILED     EXECUTING
+
+
+
+
+                6  master                  COMPLETED  COMPLETED
+
+
+
+
+                7  remoteStep:partition0   COMPLETED  COMPLETED
+
+
+
+
+                8  remoteStep:partition1   COMPLETED  COMPLETED
+
+
+
+
+
+</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.yarn.batch.repository.bindings.StepExecutionType.java</file>
+			<file type="M">org.springframework.yarn.batch.repository.JobRepositoryRpcFactory.java</file>
+			<file type="M">org.springframework.yarn.batch.partition.AbstractPartitionHandler.java</file>
+			<file type="M">org.springframework.yarn.batch.container.DefaultBatchYarnContainer.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="409" opendate="2014-10-25 09:03:52" fixdate="2014-11-08 05:47:04" resolution="Complete">
+		<buginformation>
+			<summary>CDH 5.2.0 has awkward functionality for path recreate failure</summary>
+			<description>We do some tricks to find an available path in store writer when we roll filenamingstrategies order to find next available path. Basically we try to create a stream into a file to see if it&amp;amp;apos;s available but we first do a check if path exists.
+If we try to create a file which already exist, hdfs throws error "org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException)" and we move on. This is a way it works in apache hadoop but functionality in cdh is different.
+CDH 5.2.0 on default sees this same error but internally waits 1min before re-trying and does this re-try 5 times. This is literally crazy because we on default try 10 times to find a suitable path which makes our tests to hang 50min for one single path. After a quick debugging there is a some sort of change in retry policies in cdh vs. vanilla hadoop.
+File exist check and a try to open it is never an atomic operation so we need to handle a case where we try to open a file whose path already exist.</description>
+			<version>2.0.2</version>
+			<fixedVersion>2.1.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.store.output.FileWriteOpenTests.java</file>
+			<file type="M">org.springframework.data.hadoop.store.output.AbstractDataStreamWriter.java</file>
+		</fixedFiles>
+		<links>
+			<link type="Depend" description="is depended on by">405</link>
+			<link type="Relate" description="relates to">422</link>
+		</links>
+	</bug>
+</bugrepository>

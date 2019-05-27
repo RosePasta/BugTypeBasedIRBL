@@ -1,0 +1,27 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+<bug id="390" opendate="2014-08-28 09:56:01" fixdate="2014-08-29 00:01:03" resolution="Complete">
+<buginformation>
+<summary>Remote batch step exit code not updated</summary>
+<description>When remote batch steps are executed on yarn containers, exit_code field is not updated in a database. As shown below exit_code is left to &amp;amp;apos;executing&amp;amp;apos; when is should &amp;amp;apos;completed&amp;amp;apos; or something else depending if step failed.       STEP_EXECUTION_ID  STEP_NAME               STATUS     EXIT_CODE     -----------------  ----------------------  ---------  ---------                     0  master1                 COMPLETED  COMPLETED                     1  remoteStep1:partition1  COMPLETED  EXECUTING                     2  remoteStep1:partition0  COMPLETED  EXECUTING                     3  master2                 FAILED     FAILED                     4  remoteStep2:partition1  FAILED     EXECUTING                     5  remoteStep2:partition0  FAILED     EXECUTING                     6  master                  COMPLETED  COMPLETED                     7  remoteStep:partition0   COMPLETED  COMPLETED                     8  remoteStep:partition1   COMPLETED  COMPLETED      </description>
+<version>2.0.2</version>
+<fixedVersion>2.1.0.M1</fixedVersion>
+<type>PB</type>
+</buginformation>
+<links>
+</links>
+<fixedFiles>
+<file type="M" name="org.springframework.yarn.batch.repository.JobRepositoryRpcFactory.java">
+<method>convertStepExecutionType(StepExecutionType)</method>
+<method>convertStepExecutionType(StepExecution,JobExecution)</method>
+</file>
+<file type="M" name="org.springframework.yarn.batch.repository.bindings.StepExecutionType.java">
+</file>
+<file type="M" name="org.springframework.yarn.batch.container.DefaultBatchYarnContainer.java">
+<method>runInternal()</method>
+</file>
+<file type="M" name="org.springframework.yarn.batch.partition.AbstractPartitionHandler.java">
+</file>
+</fixedFiles>
+</bug>
+</bugrepository>

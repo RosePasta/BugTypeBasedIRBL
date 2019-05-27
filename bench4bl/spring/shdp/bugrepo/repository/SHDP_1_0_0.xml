@@ -1,0 +1,43 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+	<bug id="74" opendate="2012-05-11 18:46:56" fixdate="2012-05-24 23:47:39" resolution="Complete">
+		<buginformation>
+			<summary>generic options namespace attributes not parsed properly</summary>
+			<description>It looks like the generic option type (libs/archives/files) are not parsed properly by the namespace resulting in incomplete configurations.</description>
+			<version>1.0.0.M1</version>
+			<fixedVersion>1.0.0.M2</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.mapreduce.ToolExecutor.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="96" opendate="2012-08-04 16:48:28" fixdate="2012-08-04 18:32:26" resolution="Complete">
+		<buginformation>
+			<summary>FsShell.text throws exception when passed in a file URI</summary>
+			<description></description>
+			<version>1.0.0.M2</version>
+			<fixedVersion>1.0.0.RC1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.fs.AbstractFsShellTest.java</file>
+			<file type="M">org.springframework.data.hadoop.fs.FsShell.java</file>
+		</fixedFiles>
+	</bug>
+	<bug id="130" opendate="2013-02-28 06:54:28" fixdate="2013-08-19 13:55:43" resolution="Complete">
+		<buginformation>
+			<summary>DistributedCacheFactoryBean closes filesystem causing hadoop 2.x app to fail</summary>
+			<description>DistributedCacheFactoryBean in afterPropertiesSet creates and closes filsystem instance. because in hadoop 2 filesystem instance are singletons, further talking to hdfs is not possible.
+fix is simple: in DistributedCacheFactoryBean change line 117 to
+	HdfsResourceLoader loader = new HdfsResourceLoader(fs);
+its regression from RC1, please fix it asap.</description>
+			<version>1.0.0.GA</version>
+			<fixedVersion>1.0.1.GA, 2.0.0.M1</fixedVersion>
+			<type>Bug</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.fs.DistributedCacheFactoryBean.java</file>
+		</fixedFiles>
+	</bug>
+</bugrepository>

@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<bugrepository name="SHDP">
+	<bug id="184" opendate="2013-09-19 08:47:35" fixdate="2014-01-31 16:21:03" resolution="Fixed">
+		<buginformation>
+			<summary>Fix Hive tests</summary>
+			<description>The Hive and Cascading tests are not working properly - they need some attention</description>
+			<version>1.0.1.GA</version>
+			<fixedVersion>1.1.0.RC1, 2.0.0.M5</fixedVersion>
+			<type>Defect</type>
+		</buginformation>
+		<fixedFiles>
+			<file type="M">org.springframework.data.hadoop.hive.BasicHiveTest.java</file>
+			<file type="M">org.springframework.data.hadoop.batch.hive.HiveBatchTest.java</file>
+		</fixedFiles>
+	</bug>
+</bugrepository>
