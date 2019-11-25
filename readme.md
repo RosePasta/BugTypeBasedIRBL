@@ -27,6 +27,13 @@
 - Evaluate the performance of the IRBL based on Lucene
 - Evaluation options: original, correct ground-truth files (GTF), production bug localization (PBL), test bug localization (TBL)
 
+#### discussion.classifier.java
+- Production and Test Bug Classification based on Naive Bayes
+- option: Binary Naive Bayes, Original Naive Bayes
+
+##### ./classification_data/
+- Training and Testing Dataset for eclipse.platform and eclipse.jdt
+- Class: POS: TB=10 / PB=0, NEG: TB=0 / PB=10
 
 ### Our Research Results
 - https://drive.google.com/open?id=1AKC9sydf2-IiGEeZB94Mx42qsNJaDw1Z
