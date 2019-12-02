@@ -24,14 +24,19 @@ public class Classifier {
 		testRelatedFolderKeywords.add("junit");
 		testRelatedFolderKeywords.add("tests");
 		
+		fullPath = fullPath.replace("/", ".");		
 		boolean flag = false;
 		String[] terms = fullPath.split("\\.");
 		for(int i = 0 ; i<terms.length-2; i++) {
 			String term = terms[i].toLowerCase();
-			if(testRelatedFolderKeywords.contains(term)) {
-//				System.out.println(fullPath+" Test Folder");
-				return true;
-			}			
+			Iterator<String> iter = testRelatedFolderKeywords.iterator();
+			while(iter.hasNext()) {
+				String tfTerm = iter.next();
+				if(term.contains(tfTerm)) {
+//					System.out.println(fullPath+" Test Folder");
+					return true;
+				}
+			}
 		}
 		String fileName = terms[terms.length-2];
 		terms = Splitter.splitSourceCode(fileName);
