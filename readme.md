@@ -1,3 +1,6 @@
+# Paper
+Misoo Kim, Eunseok Lee, "[Are Datasets for Information Retrieval-based Bug Localization Techniques Trustworthy?](https://www.google.com/url?q=https%3A%2F%2Flink.springer.com%2Farticle%2F10.1007%2Fs10664-021-09946-8&sa=D&sntz=1&usg=AFQjCNHKBa7sdJhmXprrlM5RVNOSKcJQuw)", Empirical Software Engineering (ESE), Vol.26, No.3, pp.1-66, Mar.2021
+
 ### Prepare the Bench4BL
 - https://github.com/exatoa/Bench4BL
 - J. Lee, et al. Bench4bl: reproducibility study on the performance of ir-based bug localization, ISSTA'18
