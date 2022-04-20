@@ -58,3 +58,8 @@ Misoo Kim, Eunseok Lee, "[Are Datasets for Information Retrieval-based Bug Local
    - AmaLgam: S.Wang, Version history, similar report, and structure: Putting them together for improved bug localization, ICPC'14
    - BLIA: K.C. Youm, et al. Bug localization based on code change histories and bug reports, APSEC'15
    - LOCUS: M.Wen, et al. Locus: Locating bugs from software changes, ASE'16
+
+
+# Contributor
+   - Misoo Kim (misoo12@skku.edu, hanul1546@gmail.com)
+   - Eunseok Lee (leees@skku.edu)
